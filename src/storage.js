@@ -317,6 +317,19 @@ class StorageEngine {
       return false;
     });
   }
+
+  destroyAllData() {
+    try {
+      if (fs.existsSync(this.storageDir)) {
+        fs.rmSync(this.storageDir, { recursive: true, force: true });
+      }
+      this.items = [];
+      return true;
+    } catch (err) {
+      console.error('[StorageEngine] Error destroying data:', err.message);
+      return false;
+    }
+  }
 }
 
 module.exports = { StorageEngine, MAX_CAPACITY };

@@ -1,13 +1,27 @@
 const { app, BrowserWindow, ipcMain, screen, nativeImage, Tray, Menu } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
+const { spawn } = require('child_process');
 const { StorageEngine } = require('./storage');
 const { ClipboardListener } = require('./clipboard-listener');
 const { HotkeyManager } = require('./hotkey');
 const { PasteInjector } = require('./paste-injector');
 const { LocalSyncProvider } = require('./sync-adapter');
 
+// Single-instance lock
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    // If user clicks the app in Applications or runs it again, show About/Details window
+    openAboutWindow();
+  });
+}
+
 let mainWindow = null;
+let aboutWindow = null;
 let storage = null;
 let listener = null;
 let hotkeyManager = null;
@@ -18,6 +32,132 @@ let previousAppPid = null;
 // Compact minimal window dimensions
 const WIN_WIDTH = 340;
 const WIN_HEIGHT = 430;
+
+function openAboutWindow() {
+  if (aboutWindow && !aboutWindow.isDestroyed()) {
+    aboutWindow.show();
+    aboutWindow.focus();
+    return;
+  }
+
+  aboutWindow = new BrowserWindow({
+    width: 360,
+    height: 480,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    alwaysOnTop: true,
+    center: true,
+    backgroundColor: '#00000000',
+    hasShadow: true,
+    vibrancy: 'under-window',
+    visualEffectState: 'active',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+
+  aboutWindow.loadFile(path.join(__dirname, '../ui/about.html'));
+
+  aboutWindow.on('closed', () => {
+    aboutWindow = null;
+  });
+}
+
+function setAutoStart(enable) {
+  try {
+    if (process.platform === 'darwin') {
+      app.setLoginItemSettings({
+        openAtLogin: enable,
+        openAsHidden: true
+      });
+      setupLaunchAgent(enable);
+    } else if (process.platform === 'linux') {
+      const autostartDir = path.join(os.homedir(), '.config', 'autostart');
+      const desktopFile = path.join(autostartDir, 'clipboard-manager.desktop');
+      if (enable) {
+        if (!fs.existsSync(autostartDir)) fs.mkdirSync(autostartDir, { recursive: true });
+        const content = `[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Clipboard Manager
+Comment=Clipboard Manager Daemon
+Exec="${process.execPath}" --hidden
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+`;
+        fs.writeFileSync(desktopFile, content, 'utf8');
+      } else {
+        if (fs.existsSync(desktopFile)) {
+          fs.unlinkSync(desktopFile);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[AutoStart] Failed to update autostart:', err.message);
+  }
+}
+
+function setupLaunchAgent(enable) {
+  if (process.platform !== 'darwin') return;
+  const launchAgentDir = path.join(os.homedir(), 'Library', 'LaunchAgents');
+  const plistPath = path.join(launchAgentDir, 'com.clipboardmanager.app.plist');
+
+  try {
+    if (enable) {
+      if (!fs.existsSync(launchAgentDir)) {
+        fs.mkdirSync(launchAgentDir, { recursive: true });
+      }
+      const execPath = '/Applications/ClipboardManager.app/Contents/MacOS/ClipboardManager';
+      const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.clipboardmanager.app</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>${execPath}</string>
+        <string>--hidden</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>2</integer>
+    <key>ProcessType</key>
+    <string>Interactive</string>
+</dict>
+</plist>
+`;
+      fs.writeFileSync(plistPath, plistContent, 'utf8');
+      spawn('/bin/launchctl', ['load', '-w', plistPath], { stdio: 'ignore' });
+    } else {
+      if (fs.existsSync(plistPath)) {
+        spawn('/bin/launchctl', ['unload', '-w', plistPath], { stdio: 'ignore' });
+        try { fs.unlinkSync(plistPath); } catch (_) {}
+      }
+    }
+  } catch (err) {
+    console.warn('[LaunchAgent] Error configuring launch agent:', err.message);
+  }
+}
+
+function isAutoStartEnabled() {
+  try {
+    if (process.platform === 'darwin') {
+      return app.getLoginItemSettings().openAtLogin;
+    } else if (process.platform === 'linux') {
+      const desktopFile = path.join(os.homedir(), '.config', 'autostart', 'clipboard-manager.desktop');
+      return fs.existsSync(desktopFile);
+    }
+  } catch (_) {}
+  return true;
+}
 
 function createTray() {
   const iconSvg = `
@@ -68,9 +208,15 @@ function createTray() {
     },
     { type: 'separator' },
     {
+      label: 'About Clipboard Manager...',
+      click: () => openAboutWindow()
+    },
+    { type: 'separator' },
+    {
       label: 'Quit',
       click: () => {
         app.isQuitting = true;
+        setupLaunchAgent(false);
         app.quit();
       }
     }
@@ -109,11 +255,16 @@ function createWindow() {
 
   // Automatically hide floating HUD when user clicks away
   mainWindow.on('blur', () => {
-    if (mainWindow && mainWindow.isVisible()) {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
       mainWindow.hide();
-      if (process.platform === 'darwin') {
-        app.hide();
-      }
+    }
+  });
+
+  // Never destroy window on close unless quitting
+  mainWindow.on('close', (e) => {
+    if (!app.isQuitting) {
+      e.preventDefault();
+      mainWindow.hide();
     }
   });
 
@@ -123,7 +274,7 @@ function createWindow() {
 }
 
 function positionWindow() {
-  if (!mainWindow) return;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
   const cursor = screen.getCursorScreenPoint();
   const currentDisplay = screen.getDisplayNearestPoint(cursor);
   const { x: dx, y: dy, width: dw, height: dh } = currentDisplay.workArea;
@@ -153,10 +304,11 @@ function positionWindow() {
 }
 
 function toggleWindow() {
-  if (!mainWindow) return;
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+  }
   if (mainWindow.isVisible()) {
     mainWindow.hide();
-    if (process.platform === 'darwin') app.hide();
   } else {
     // Capture frontmost app PID synchronously in 1ms BEFORE showing the HUD
     previousAppPid = PasteInjector.getActivePid();
@@ -234,6 +386,87 @@ function setupIPC() {
 
     return true;
   });
+
+  // App Information Handler for About Dialog
+  ipcMain.handle('get-app-info', () => {
+    return {
+      version: app.getVersion() || '1.0.0',
+      platform: process.platform,
+      autoStart: isAutoStartEnabled(),
+      shortcut: process.platform === 'darwin' ? 'Cmd+Shift+V' : 'Ctrl+Shift+V'
+    };
+  });
+
+  // Autostart Toggle Handler
+  ipcMain.handle('set-auto-start', (_e, enabled) => {
+    setAutoStart(enabled);
+    return isAutoStartEnabled();
+  });
+
+  // Close About Dialog
+  ipcMain.handle('close-about', () => {
+    if (aboutWindow && !aboutWindow.isDestroyed()) {
+      aboutWindow.close();
+      aboutWindow = null;
+    }
+  });
+
+  // Open About Dialog
+  ipcMain.handle('open-about', () => {
+    openAboutWindow();
+  });
+
+  // Uninstall App Handler
+  ipcMain.handle('uninstall-app', async (_e, options) => {
+    try {
+      // 1. Disable autostart
+      setAutoStart(false);
+      setupLaunchAgent(false);
+
+      // 2. Stop active listener and hotkeys
+      if (hotkeyManager) hotkeyManager.unregisterAll();
+      if (listener) listener.stop();
+
+      // 3. Delete stored data if user checked history deletion
+      if (options && options.deleteHistory && storage) {
+        storage.destroyAllData();
+      }
+
+      // 4. Detached bundle removal
+      if (process.platform === 'darwin') {
+        const execPath = process.execPath;
+        const match = execPath.match(/(.*?\.app)/);
+        const appBundle = match ? match[1] : '/Applications/ClipboardManager.app';
+
+        if (fs.existsSync(appBundle)) {
+          const script = `sleep 1 && rm -rf "${appBundle}"`;
+          const child = spawn('/bin/bash', ['-c', script], {
+            detached: true,
+            stdio: 'ignore'
+          });
+          child.unref();
+        }
+      } else if (process.platform === 'linux') {
+        const script = `sleep 1 && rm -f /usr/local/bin/clipboard-manager ~/.local/share/applications/clipboard-manager.desktop ~/.config/autostart/clipboard-manager.desktop`;
+        const child = spawn('/bin/bash', ['-c', script], {
+          detached: true,
+          stdio: 'ignore'
+        });
+        child.unref();
+      }
+
+      // 5. Exit application cleanly
+      setTimeout(() => {
+        app.isQuitting = true;
+        app.quit();
+      }, 500);
+
+      return { success: true };
+    } catch (err) {
+      console.error('[Uninstall] Error during uninstall:', err);
+      return { success: false, error: err.message };
+    }
+  });
 }
 
 // App lifecycle
@@ -242,6 +475,9 @@ app.whenReady().then(() => {
   if (process.platform === 'darwin' && app.dock) {
     app.dock.hide();
   }
+
+  // Ensure autostart is enabled by default
+  setAutoStart(true);
 
   // Initialize storage
   storage = new StorageEngine();
@@ -272,6 +508,31 @@ app.whenReady().then(() => {
   hotkeyManager.register(() => {
     toggleWindow();
   });
+
+  // If user launched manually (not at system boot / not with --hidden), open the About/Details window
+  const isHiddenLaunch = process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAtLogin;
+  if (!isHiddenLaunch) {
+    openAboutWindow();
+  }
+});
+
+// If app is activated (e.g. clicked in Finder / Applications / Dock)
+app.on('activate', () => {
+  openAboutWindow();
+});
+
+// Intercept window close / Cmd+Q: prevent quitting the background daemon
+app.on('before-quit', (e) => {
+  if (!app.isQuitting) {
+    e.preventDefault();
+    if (aboutWindow && !aboutWindow.isDestroyed()) {
+      aboutWindow.close();
+      aboutWindow = null;
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.hide();
+    }
+  }
 });
 
 app.on('will-quit', () => {
@@ -279,9 +540,9 @@ app.on('will-quit', () => {
   if (listener) listener.stop();
 });
 
-// Keep daemon running in background on macOS/Linux even when window is closed
+// Keep daemon running in background on macOS/Linux even when windows are closed
 app.on('window-all-closed', (e) => {
-  if (!app.isQuitting) {
+  if (e && typeof e.preventDefault === 'function') {
     e.preventDefault();
   }
 });

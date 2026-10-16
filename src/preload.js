@@ -14,3 +14,10 @@ contextBridge.exposeInMainWorld('clipboardAPI', {
     ipcRenderer.on('clipboard-item-added', (_event, item) => callback(item));
   }
 });
+
+contextBridge.exposeInMainWorld('aboutAPI', {
+  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  setAutoStart: (enabled) => ipcRenderer.invoke('set-auto-start', enabled),
+  closeWindow: () => ipcRenderer.invoke('close-about'),
+  uninstallApp: (options) => ipcRenderer.invoke('uninstall-app', options)
+});

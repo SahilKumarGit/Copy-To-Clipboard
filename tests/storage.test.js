@@ -97,11 +97,19 @@ function runTests() {
     assert.strictEqual(engine2.getItems().length, 2);
     assert.strictEqual(engine2.getItems()[0].content, 'Persistent Item 2');
 
-    console.log('\n✅ All 10 StorageEngine tests passed successfully!');
+    // 11. Destroy all data
+    console.log('Test 11: Complete data wipe on destroyAllData');
+    engine2.destroyAllData();
+    assert.strictEqual(fs.existsSync(tempDir), false, 'Storage directory should be completely removed');
+    assert.strictEqual(engine2.getItems().length, 0);
+
+    console.log('\n✅ All 11 StorageEngine tests passed successfully!');
   } finally {
     // Clean up temp directory
     try {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+      if (fs.existsSync(tempDir)) {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
     } catch (_) {}
   }
 }
