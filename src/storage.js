@@ -33,10 +33,10 @@ class StorageEngine {
 
   _ensureDirectories() {
     if (!fs.existsSync(this.storageDir)) {
-      fs.mkdirSync(this.storageDir, { recursive: true });
+      fs.mkdirSync(this.storageDir, { recursive: true, mode: 0o700 });
     }
     if (!fs.existsSync(this.assetsDir)) {
-      fs.mkdirSync(this.assetsDir, { recursive: true });
+      fs.mkdirSync(this.assetsDir, { recursive: true, mode: 0o700 });
     }
   }
 
@@ -65,7 +65,7 @@ class StorageEngine {
       };
 
       const tmpFile = `${this.metadataFile}.tmp`;
-      fs.writeFileSync(tmpFile, JSON.stringify(payload, null, 2), 'utf8');
+      fs.writeFileSync(tmpFile, JSON.stringify(payload, null, 2), { encoding: 'utf8', mode: 0o600 });
       fs.renameSync(tmpFile, this.metadataFile);
     } catch (err) {
       console.error('[StorageEngine] Error saving history.json:', err.message);
@@ -181,7 +181,7 @@ class StorageEngine {
 
     // Save image asset to disk
     try {
-      fs.writeFileSync(assetFilePath, buffer);
+      fs.writeFileSync(assetFilePath, buffer, { mode: 0o600 });
     } catch (err) {
       console.error('[StorageEngine] Failed to write image asset:', err);
       return null;
@@ -243,10 +243,18 @@ class StorageEngine {
    */
   _cleanupAssetIfOrphan(item) {
     if (item && item.type === 'image' && item.assetPath) {
+      // Security: ensure assetPath strictly resolves within this.assetsDir (prevent path traversal)
+      const resolvedPath = path.resolve(item.assetPath);
+      const resolvedAssetsDir = path.resolve(this.assetsDir);
+      if (!resolvedPath.startsWith(resolvedAssetsDir + path.sep)) {
+        console.warn('[StorageEngine] Blocked path traversal attempt on asset deletion:', item.assetPath);
+        return;
+      }
+
       const isReferenced = this.items.some(i => i.assetPath === item.assetPath);
-      if (!isReferenced && fs.existsSync(item.assetPath)) {
+      if (!isReferenced && fs.existsSync(resolvedPath)) {
         try {
-          fs.unlinkSync(item.assetPath);
+          fs.unlinkSync(resolvedPath);
         } catch (err) {
           console.error('[StorageEngine] Error deleting asset:', err.message);
         }

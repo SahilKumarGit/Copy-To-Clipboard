@@ -55,7 +55,22 @@ function openAboutWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false
+    }
+  });
+
+  aboutWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https:') || url.startsWith('http:')) {
+      require('electron').shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
+  aboutWindow.webContents.on('will-navigate', (e, url) => {
+    if (url !== aboutWindow.webContents.getURL()) {
+      e.preventDefault();
     }
   });
 
@@ -243,7 +258,22 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false
+    }
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https:') || url.startsWith('http:')) {
+      require('electron').shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    if (url !== mainWindow.webContents.getURL()) {
+      e.preventDefault();
     }
   });
 
@@ -439,8 +469,8 @@ function setupIPC() {
         const appBundle = match ? match[1] : '/Applications/ClipboardManager.app';
 
         if (fs.existsSync(appBundle)) {
-          const script = `sleep 1 && rm -rf "${appBundle}"`;
-          const child = spawn('/bin/bash', ['-c', script], {
+          const child = spawn('/bin/sh', ['-c', 'sleep 1 && rm -rf "$TARGET"', '--'], {
+            env: { ...process.env, TARGET: appBundle },
             detached: true,
             stdio: 'ignore'
           });

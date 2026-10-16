@@ -187,7 +187,7 @@ class ClipboardApp {
       const imgSrc = item.assetPath ? `file://${item.assetPath}` : '';
       bodyContent = `
         <div class="image-preview-wrapper">
-          <img src="${imgSrc}" class="image-preview-thumb" alt="Clipboard screenshot" />
+          <img src="${this._escapeHtml(imgSrc)}" class="image-preview-thumb" alt="Clipboard screenshot" />
         </div>
         <div class="image-meta-text">${this._escapeHtml(item.preview)}</div>
       `;
