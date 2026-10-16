@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clipboard History</title>
+  <link rel="stylesheet" href="styles/main.css" />
+  <link rel="stylesheet" href="styles/components.css" />
+</head>
+<body>
+  <div class="hud-container">
+    <!-- Header: Search & Info -->
+    <header class="hud-header">
+      <div class="search-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Search clipboard..." 
+          autocomplete="off" 
+          spellcheck="false" 
+          autofocus 
+        />
+        <span class="count-badge" id="count-badge">0/50</span>
+      </div>
+    </header>
+
+    <!-- Permission Banner (macOS Accessibility) -->
+    <div class="permission-banner" id="permission-banner" style="display: none;">
+      <div class="banner-content">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        <span>Enable Accessibility for auto-paste</span>
+      </div>
+      <button id="grant-perm-btn">Grant</button>
+    </div>
+
+    <!-- Filter Pill Tabs (Android / Windows style) -->
+    <nav class="filter-tabs" id="filter-tabs">
+      <button class="tab-btn active" data-filter="all">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="tab-icon">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        <span>All</span>
+      </button>
+      <button class="tab-btn" data-filter="pinned">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="tab-icon">
+          <path d="M12 17v5M5 17h14l-2-6V4h1V2H6v2h1v7L5 17z"/>
+        </svg>
+        <span>Pinned</span>
+      </button>
+      <button class="tab-btn" data-filter="text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="tab-icon">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>Text</span>
+      </button>
+      <button class="tab-btn" data-filter="image">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="tab-icon">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+        <span>Images</span>
+      </button>
+      <button class="tab-btn" data-filter="url">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="tab-icon">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        <span>Links</span>
+      </button>
+    </nav>
+
+    <!-- Items List (Scrollable, max 50 items) -->
+    <main class="items-list-wrapper">
+      <div class="items-list" id="items-list">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="empty-state" id="empty-state" style="display: none;">
+        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+        </svg>
+        <p class="empty-title">Clipboard is empty</p>
+        <p class="empty-desc">Copy text or images to see them here.</p>
+      </div>
+    </main>
+
+    <!-- Footer Bar -->
+    <footer class="hud-footer">
+      <button class="clear-btn" id="clear-unpinned-btn" title="Remove all unpinned items">
+        <svg viewBox="0 0 448 512" fill="currentColor" width="11" height="11">
+          <path d="M135.2 17.7C140.6 6.8 151.7 0 163.8 0h120.4c12.1 0 23.2 6.8 28.6 17.7L320 32h96c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 96 0 81.7 0 64s14.3-32 32-32h96l7.2-14.3zM32 128h384l-21.6 339c-1.6 25.3-22.6 45-47.9 45H101.5c-25.3 0-46.3-19.7-47.9-45L32 128zm112 80c-8.8 0-16 7.2-16 16v192c0 8.8 7.2 16 16 16s16-7.2 16-16V224c0-8.8-7.2-16-16-16zm96 0c-8.8 0-16 7.2-16 16v192c0 8.8 7.2 16 16 16s16-7.2 16-16V224c0-8.8-7.2-16-16-16zm96 0c-8.8 0-16 7.2-16 16v192c0 8.8 7.2 16 16 16s16-7.2 16-16V224c0-8.8-7.2-16-16-16z"/>
+        </svg>
+        <span>Clear unpinned</span>
+      </button>
+
+      <div class="shortcut-hints">
+        <span><kbd>↑</kbd><kbd>↓</kbd> Nav</span>
+        <span><kbd>↵</kbd> Paste</span>
+        <span><kbd>Esc</kbd> Close</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="scripts/search.js"></script>
+  <script src="scripts/keyboard_nav.js"></script>
+  <script src="scripts/app.js"></script>
+</body>
+</html>
