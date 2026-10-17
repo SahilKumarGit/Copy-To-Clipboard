@@ -80,6 +80,28 @@ open /Applications/ClipboardManager.app
 
 ---
 
+## 🛡️ macOS Gatekeeper: "ClipboardManager is damaged and can't be opened"
+
+If you download the `.dmg` or `.zip` directly through a web browser (Google Chrome, Safari), macOS automatically tags the file with a quarantine attribute (`com.apple.quarantine`). On macOS Sonoma and Sequoia, unsigned open-source applications will display:
+
+> *“ClipboardManager” is damaged and can’t be opened. You should move it to the Bin.*
+
+**The application is NOT damaged.** This is standard macOS Gatekeeper behavior for downloaded unsigned binaries.
+
+### Quick Fix (Run in Terminal):
+```bash
+xattr -cr /Applications/ClipboardManager.app
+```
+Then launch the app normally:
+```bash
+open /Applications/ClipboardManager.app
+```
+
+> [!TIP]
+> **Avoid this prompt completely:** If you install using the [One-Line Installer](#-instant-one-line-installation-recommended), the installer automatically removes the quarantine attribute during extraction so this message never appears!
+
+---
+
 ## 🔐 Granting macOS Accessibility Permissions
 
 > [!IMPORTANT]
