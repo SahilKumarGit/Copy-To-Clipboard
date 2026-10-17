@@ -16,13 +16,14 @@ fi
 echo "Running test suite..."
 node tests/storage.test.js
 
-# Build macOS DMG and .app
-if command -v electron-builder &> /dev/null; then
-  echo "Packaging for macOS..."
-  npx electron-builder --mac dmg dir
-else
-  echo "Packaging via npx electron-builder..."
-  npx --yes electron-builder --mac dmg dir || echo "Please run: npm install -g electron-builder"
-fi
+# Compile native macOS paste injector
+echo "Compiling native paste helper..."
+mkdir -p bin
+clang -Wall -Wextra -Werror -framework ApplicationServices -framework Cocoa native/paste-helper-mac.m -o bin/paste-helper-mac
+chmod +x bin/paste-helper-mac
+
+# Build macOS DMG, ZIP, and .app
+echo "Packaging for macOS..."
+npx electron-builder --mac
 
 echo "Build complete. Artifacts saved in dist/ directory."

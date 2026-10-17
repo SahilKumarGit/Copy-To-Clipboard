@@ -1,28 +1,38 @@
 # 📋 Clipboard Manager (macOS & Ubuntu Linux)
 
-A lightning-fast, ultra-lightweight, cross-platform clipboard manager with instant floating HUD, auto-paste into active inputs, auto-start on boot, Font Awesome vector icons, and strict Non-SQL atomic storage.
+A lightning-fast, ultra-lightweight, cross-platform clipboard manager with instant floating HUD, auto-paste into active inputs, auto-start on boot, Font Awesome vector icons, strict Non-SQL atomic storage, and automated GitHub CI/CD releases.
 
 ---
 
-## ⚡ Quick Install & Execute (One-Line Command)
+## ⚡ Instant Install (Prebuilt Binaries)
 
-Run this single command in your terminal to build, install, register autostart, and launch:
+Install the latest pre-compiled version directly in 3 seconds without downloading source or installing build tools:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/sahilkumarsahoo/Copy-To-Clipboard/main/install.sh)
+curl -fsSL https://raw.githubusercontent.com/SahilKumarGit/Copy-To-Clipboard/main/install.sh | bash
 ```
 
-Or run locally if already cloned:
+To install a specific version:
 ```bash
-bash install.sh
+curl -fsSL https://raw.githubusercontent.com/SahilKumarGit/Copy-To-Clipboard/main/install.sh | bash -s v1.0.0
 ```
+
+---
+
+## 🔄 Automated CI/CD Release Pipeline
+
+When code is merged to `main` or `master`, the GitHub Actions pipeline ([`.github/workflows/release.yml`](.github/workflows/release.yml)) automatically:
+1. Runs the test suite across platforms.
+2. Compiles native Cocoa helpers and packages standalone `.app`, `.dmg`, and `.zip` for macOS (Apple Silicon & Intel) and `.AppImage`, `.tar.gz`, and `.deb` for Linux.
+3. Automatically publishes a versioned GitHub Release with SHA-256 checksums.
+4. Makes the release immediately available to the one-line installer.
 
 ---
 
 ## 📖 Step-by-Step Documentation
 
 - **[User Guide (How to Use)](docs/HOW_TO_USE.md)**: Complete walkthrough of hotkeys, navigation, auto-pasting, pinning, categories, and tray controls.
-- **[Installation Guide (How to Install)](docs/HOW_TO_INSTALL.md)**: One-liner script, manual compilation, macOS Accessibility permissions setup, autostart verification, and uninstall instructions.
+- **[Installation Guide (How to Install)](docs/HOW_TO_INSTALL.md)**: Instant prebuilt installer, GitHub CI/CD details, macOS Accessibility permissions setup, autostart verification, and uninstall instructions.
 
 ---
 
@@ -31,7 +41,7 @@ bash install.sh
 - **Global Hotkey HUD**: Triggered instantly via `Cmd+Shift+V` (macOS) or `Ctrl+Shift+V` (Linux) right next to your active cursor.
 - **Auto-Paste Injection**: Click any card or press `Enter` to automatically inject the content directly into your active input field.
 - **Multi-Monitor Intelligent Clamping**: Seamlessly floats on whichever monitor or desktop workspace your mouse is located without snapping back to primary display.
-- **Auto-Start on Reboot**: Automatically registers into **macOS Login Items** (`~/.config/autostart` on Linux) so you never need to manually start it.
+- **Auto-Start on Reboot**: Automatically registers into **macOS Login Items** and `launchd` (`~/.config/autostart` on Linux) so you never need to manually start it.
 - **Interactive About & Settings Pop-up**: Double-click the app in `/Applications` or click the Menu Bar icon to view version details, toggle autostart, and uninstall.
 - **Built-in Safe Uninstaller**: Easily uninstall the app bundle with a confirmation dialog ("Would you like to uninstall this?") and optional history wipe.
 - **Clean Vector UI**: 100% Font Awesome vector SVG icons for categories, pins, and deletion. Zero emojis.

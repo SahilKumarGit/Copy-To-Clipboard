@@ -12,6 +12,9 @@
   "build": {
     "appId": "com.clipboard.manager",
     "productName": "ClipboardManager",
+    "directories": {
+      "buildResources": "build"
+    },
     "files": [
       "bin/**/*",
       "src/**/*",
@@ -23,16 +26,19 @@
     ],
     "mac": {
       "category": "public.app-category.utilities",
+      "icon": "build/icon.icns",
       "target": [
         "dmg",
-        "dir"
+        "zip"
       ]
     },
     "linux": {
       "category": "Utility",
+      "icon": "build/icon.png",
       "target": [
-        "deb",
-        "AppImage"
+        "AppImage",
+        "tar.gz",
+        "deb"
       ]
     }
   },

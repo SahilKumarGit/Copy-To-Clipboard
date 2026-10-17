@@ -1,80 +1,80 @@
 # 🚀 How to Install Clipboard Manager
 
-This document provides complete, step-by-step instructions for installing, configuring permissions, setting up automatic launch on reboot, and uninstalling **Clipboard Manager** on macOS and Linux.
+This document provides complete, step-by-step instructions for installing, configuring permissions, managing versioned releases, setting up automatic launch on reboot, and uninstalling **Clipboard Manager** on macOS and Linux.
 
 ---
 
-## ⚡ Quick Start: One-Line Installer & Launcher
+## ⚡ Quick Start: Instant Prebuilt Installer (Recommended)
 
-To install and launch Clipboard Manager in a single command, open your Terminal and run:
+You do **not** need to install Node.js, npm, or build tools. When code is merged to `main`/`master`, our GitHub CI/CD pipeline automatically compiles, tests, and publishes optimized standalone binaries to GitHub Releases.
 
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/sahilkumarsahoo/Copy-To-Clipboard/main/install.sh)
-```
-
-Or if you have already cloned the repository locally:
+Run this single command in your Terminal:
 
 ```bash
-bash install.sh
+curl -fsSL https://raw.githubusercontent.com/SahilKumarGit/Copy-To-Clipboard/main/install.sh | bash
 ```
 
-### What the installer handles automatically:
-1. Detects your OS (macOS Apple Silicon / Intel or Ubuntu Linux).
-2. Verifies Node.js & npm prerequisites.
-3. Compiles the high-performance native Cocoa paste injector (`bin/paste-helper-mac`).
-4. Packages a standalone application bundle (`ClipboardManager.app`).
-5. Installs the bundle into `/Applications/ClipboardManager.app`.
-6. Strips macOS quarantine flags (`xattr -cr`).
-7. Configures automatic startup upon system reboot.
-8. Launches the application daemon immediately.
+### What this command does in 3 seconds:
+1. Detects your OS and processor architecture (`macOS Apple Silicon arm64`, `macOS Intel x86_64`, or `Ubuntu Linux`).
+2. Fetches the latest pre-compiled release package from GitHub Releases.
+3. Extracts and installs `ClipboardManager.app` directly into `/Applications/ClipboardManager.app`.
+4. Removes macOS Gatekeeper quarantine (`xattr -cr`).
+5. Registers the background daemon in macOS `launchd` and Login Items for automatic reboot loading.
+6. Launches the application daemon immediately.
 
 ---
 
-## 🛠️ Manual Installation (Step-by-Step)
+## 🏷️ Installing a Specific Version
 
-If you prefer building and deploying manually, follow these steps:
+You can install any previous release version by passing the version tag:
 
-### 1. Prerequisites
-- **Node.js**: v18.0.0 or higher ([Download Node.js](https://nodejs.org))
-- **npm**: v9.0.0 or higher
-- **Xcode Command Line Tools** (macOS): `xcode-select --install`
-
-### 2. Clone the Repository
 ```bash
-git clone https://github.com/sahilkumarsahoo/Copy-To-Clipboard.git
+# Install a specific version via curl
+curl -fsSL https://raw.githubusercontent.com/SahilKumarGit/Copy-To-Clipboard/main/install.sh | bash -s v1.0.0
+
+# Or using an environment variable
+VERSION=v1.0.0 curl -fsSL https://raw.githubusercontent.com/SahilKumarGit/Copy-To-Clipboard/main/install.sh | bash
+```
+
+---
+
+## 🔄 GitHub CI/CD Automated Build Pipeline
+
+Located at [`.github/workflows/release.yml`](../.github/workflows/release.yml):
+
+- **Trigger**: Every push or pull-request merge into `main` or `master`.
+- **macOS Build Job (`macos-latest`)**:
+  - Sets up Node.js v20.
+  - Compiles the native Cocoa paste injector with Clang (`native/paste-helper-mac.m` → `bin/paste-helper-mac`).
+  - Packages standalone `.zip` and `.dmg` binaries for both **Apple Silicon (`arm64`)** and **Intel (`x64`)**.
+- **Linux Build Job (`ubuntu-latest`)**:
+  - Packages `.AppImage`, `.tar.gz`, and `.deb` for standard Linux distributions.
+- **Release Publisher Job**:
+  - Reads version from `package.json` (`v1.0.0`).
+  - Computes cryptographic SHA-256 checksums (`SHA256SUMS.txt`).
+  - Publishes or updates the GitHub Release tag on `SahilKumarGit/Copy-To-Clipboard` with all binary assets attached.
+
+---
+
+## 🛠️ Building from Source Locally (Optional)
+
+If you prefer building from source rather than downloading pre-compiled releases:
+
+```bash
+# 1. Clone repository
+git clone https://github.com/SahilKumarGit/Copy-To-Clipboard.git
 cd Copy-To-Clipboard
+
+# 2. Run installer with --build flag
+bash install.sh --build
 ```
 
-### 3. Install Dependencies
+Or manually:
 ```bash
 npm install
-```
-
-### 4. Compile the Native macOS Paste Helper
-On macOS, paste keystrokes are injected via a compiled C/Objective-C binary utilizing CoreGraphics `CGEventPostToPid`:
-```bash
-mkdir -p bin
-clang -framework ApplicationServices -framework Cocoa native/paste-helper-mac.m -o bin/paste-helper-mac
-chmod +x bin/paste-helper-mac
-```
-
-### 5. Package the Standalone Application
-```bash
-npx electron-builder --mac dir
-```
-*(On Linux, use `npx electron-builder --linux dir`)*
-
-### 6. Install to `/Applications`
-```bash
-killall ClipboardManager 2>/dev/null || true
-rm -rf /Applications/ClipboardManager.app
-cp -R "dist/mac-arm64/ClipboardManager.app" /Applications/ClipboardManager.app
-xattr -cr /Applications/ClipboardManager.app
-```
-*(Note: If using an Intel Mac, use `dist/mac/ClipboardManager.app`)*
-
-### 7. Launch the Application
-```bash
+clang -Wall -Wextra -Werror -framework ApplicationServices -framework Cocoa native/paste-helper-mac.m -o bin/paste-helper-mac
+npx electron-builder --mac dmg zip
+cp -R dist/mac-arm64/ClipboardManager.app /Applications/
 open /Applications/ClipboardManager.app
 ```
 
@@ -100,51 +100,42 @@ System Settings
            └── [✓] ClipboardManager  <-- ENABLE THIS
 ```
 
-> [!TIP]
-> You can also check your permission status anytime by clicking the Menu Bar tray icon and selecting **"Check Accessibility Permission"**.
-
 ---
 
 ## 🔄 Automatic Startup on System Restart
 
 Clipboard Manager is designed to function as an invisible, zero-maintenance background daemon:
 
-- **Built-in Startup**: During initial launch, the app automatically registers with **macOS Login Items**.
+- **Built-in Startup**: During initial launch, the app automatically registers with **macOS Login Items** and `launchd` (`~/Library/LaunchAgents/com.clipboardmanager.app.plist`).
+- **Daemon Resilience**: If the app is closed in the task manager or the window is closed, `launchd` keeps the daemon alive in the background.
 - **Verification**:
   - Open **System Settings** → **General** → **Login Items**.
   - Confirm **ClipboardManager** is listed under **"Open at Login"**.
-- **Reboot Test**:
-  - Restart your Mac.
-  - The app will start silently in the background without opening any distracting windows.
-  - Press `Cmd + Shift + V` at any time to verify that your clipboard HUD appears instantly.
-- **Toggling Autostart**:
-  - Open the **About** window (by clicking ClipboardManager in Applications or via the Menu Bar).
-  - Toggle the **"Launch at Startup"** switch ON or OFF.
 
 ---
 
 ## 🗑️ How to Uninstall
-
-Clipboard Manager includes both a **one-click GUI uninstaller** and a manual removal command.
 
 ### Method 1: Built-in GUI Uninstaller (Recommended)
 1. Open the **About** window:
    - Click **ClipboardManager** in your `/Applications` list, **OR**
    - Click the Menu Bar icon and select **"About Clipboard Manager..."**.
 2. Click **"Uninstall Clipboard Manager"** at the bottom.
-3. A confirmation modal will appear:
-   > *"Would you like to uninstall this application? This will remove the app bundle and unregister startup launch."*
-4. Optionally check *"Also delete saved clipboard history"* if you want a complete wipe.
-5. Click **"Yes, Uninstall"**. The app unregisters from login items, safely removes `/Applications/ClipboardManager.app`, and exits.
+3. In the confirmation modal, optionally check *"Also delete saved clipboard history"*.
+4. Click **"Yes, Uninstall"**. The app unloads the launch agent, safely deletes `/Applications/ClipboardManager.app`, and exits.
 
 ### Method 2: Manual Removal via Terminal
 ```bash
-# 1. Stop the running process
+# 1. Unload launch agent
+launchctl unload -w ~/Library/LaunchAgents/com.clipboardmanager.app.plist 2>/dev/null || true
+rm -f ~/Library/LaunchAgents/com.clipboardmanager.app.plist
+
+# 2. Stop running process
 killall ClipboardManager 2>/dev/null || true
 
-# 2. Remove the application bundle
+# 3. Remove application bundle
 rm -rf /Applications/ClipboardManager.app
 
-# 3. (Optional) Wipe clipboard history database and assets
+# 4. (Optional) Wipe clipboard history database and assets
 rm -rf "$HOME/Library/Application Support/clipboard-history"
 ```

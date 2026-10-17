@@ -50,6 +50,7 @@ function openAboutWindow() {
     center: true,
     backgroundColor: '#00000000',
     hasShadow: true,
+    icon: path.join(__dirname, '../ui/icon.png'),
     vibrancy: 'under-window',
     visualEffectState: 'active',
     webPreferences: {
@@ -176,12 +177,17 @@ function isAutoStartEnabled() {
 
 function createTray() {
   const iconSvg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1 2-2h2"></path>
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
       <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+      <line x1="9" y1="12" x2="15" y2="12"></line>
+      <line x1="9" y1="16" x2="13" y2="16"></line>
     </svg>
   `;
-  const icon = nativeImage.createFromBuffer(Buffer.from(iconSvg), { width: 16, height: 16 });
+  const icon = nativeImage.createFromBuffer(Buffer.from(iconSvg), { width: 18, height: 18 });
+  if (process.platform === 'darwin') {
+    icon.setTemplateImage(true);
+  }
   
   tray = new Tray(icon);
   tray.setToolTip('Clipboard Manager (Ctrl+Shift+V / Cmd+Shift+V)');
@@ -253,6 +259,7 @@ function createWindow() {
     resizable: false,
     backgroundColor: '#00000000',
     hasShadow: true,
+    icon: path.join(__dirname, '../ui/icon.png'),
     vibrancy: 'under-window',
     visualEffectState: 'active',
     webPreferences: {

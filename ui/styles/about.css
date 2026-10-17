@@ -41,22 +41,13 @@ body {
   text-align: center;
 }
 
-.app-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+.app-logo-image {
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
   margin-bottom: 8px;
-}
-
-.app-icon {
-  width: 26px;
-  height: 26px;
-  stroke: #ffffff;
+  object-fit: cover;
 }
 
 .app-title {
