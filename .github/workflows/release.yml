@@ -33,7 +33,7 @@ jobs:
       - name: Compile native macOS paste helper
         run: |
           mkdir -p bin
-          clang -Wall -Wextra -Werror -framework ApplicationServices -framework Cocoa native/paste-helper-mac.m -o bin/paste-helper-mac
+          clang -Wall -Wextra -Werror -Wno-deprecated-declarations -framework ApplicationServices -framework Cocoa -framework Carbon native/paste-helper-mac.m -o bin/paste-helper-mac
           chmod +x bin/paste-helper-mac
 
       - name: Package macOS Application (.dmg and .zip for arm64 & x64)

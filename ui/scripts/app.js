@@ -76,6 +76,12 @@ class ClipboardApp {
         }
         this.render();
       });
+
+      if (window.clipboardAPI.onWindowShown) {
+        window.clipboardAPI.onWindowShown(() => {
+          this.checkAccessibility();
+        });
+      }
     }
   }
 

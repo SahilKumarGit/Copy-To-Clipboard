@@ -51,7 +51,7 @@ build_from_source() {
   npm install --prefer-offline --no-audit --loglevel=error
   mkdir -p bin
   if [ "$OS" = "Darwin" ]; then
-    clang -Wall -Wextra -Werror -framework ApplicationServices -framework Cocoa native/paste-helper-mac.m -o bin/paste-helper-mac
+    clang -Wall -Wextra -Werror -Wno-deprecated-declarations -framework ApplicationServices -framework Cocoa -framework Carbon native/paste-helper-mac.m -o bin/paste-helper-mac
     chmod +x bin/paste-helper-mac
     npx electron-builder --mac dir --publish never >/dev/null 2>&1
     

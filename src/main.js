@@ -348,12 +348,18 @@ function toggleWindow() {
     mainWindow.hide();
   } else {
     // Capture frontmost app PID synchronously in 1ms BEFORE showing the HUD
-    previousAppPid = PasteInjector.getActivePid();
+    const activePid = PasteInjector.getActivePid();
+    if (activePid && activePid !== process.pid) {
+      previousAppPid = activePid;
+    }
 
     mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     positionWindow();
     mainWindow.show();
     mainWindow.focus();
+    if (mainWindow.webContents) {
+      mainWindow.webContents.send('window-shown');
+    }
   }
 }
 
@@ -416,6 +422,12 @@ function setupIPC() {
     }
     if (process.platform === 'darwin') {
       app.hide();
+    }
+
+    // If macOS Accessibility permissions are not granted, prompt the user
+    if (process.platform === 'darwin' && !PasteInjector.checkPermissions(false)) {
+      PasteInjector.checkPermissions(true);
+      return true;
     }
 
     // 3. Inject synthetic paste keystroke targeting the original process PID

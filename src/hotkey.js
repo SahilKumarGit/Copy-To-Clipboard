@@ -6,33 +6,39 @@ const { globalShortcut } = require('electron');
  */
 class HotkeyManager {
   constructor(shortcut = 'CommandOrControl+Shift+V') {
-    this.shortcut = shortcut;
-    this.isRegistered = false;
+    this.shortcuts = Array.isArray(shortcut) ? shortcut : [shortcut];
+    if (process.platform === 'darwin') {
+      if (!this.shortcuts.includes('Command+Shift+V')) this.shortcuts.push('Command+Shift+V');
+      if (!this.shortcuts.includes('Control+Shift+V')) this.shortcuts.push('Control+Shift+V');
+    }
+    this.registeredShortcuts = [];
   }
 
   register(onTrigger) {
-    try {
-      this.isRegistered = globalShortcut.register(this.shortcut, () => {
-        if (typeof onTrigger === 'function') {
-          onTrigger();
+    this.shortcuts.forEach((sc) => {
+      try {
+        const ok = globalShortcut.register(sc, () => {
+          if (typeof onTrigger === 'function') {
+            onTrigger();
+          }
+        });
+        if (ok) {
+          this.registeredShortcuts.push(sc);
+          console.log(`[HotkeyManager] Registered global shortcut: ${sc}`);
+        } else {
+          console.warn(`[HotkeyManager] Failed to register global shortcut: ${sc}`);
         }
-      });
-
-      if (!this.isRegistered) {
-        console.warn(`[HotkeyManager] Failed to register global shortcut: ${this.shortcut}`);
-      } else {
-        console.log(`[HotkeyManager] Registered global shortcut: ${this.shortcut}`);
+      } catch (err) {
+        console.error(`[HotkeyManager] Error registering hotkey ${sc}:`, err);
       }
-    } catch (err) {
-      console.error('[HotkeyManager] Error registering hotkey:', err);
-    }
+    });
   }
 
   unregister() {
-    if (this.isRegistered) {
-      globalShortcut.unregister(this.shortcut);
-      this.isRegistered = false;
-    }
+    this.registeredShortcuts.forEach((sc) => {
+      globalShortcut.unregister(sc);
+    });
+    this.registeredShortcuts = [];
   }
 
   unregisterAll() {

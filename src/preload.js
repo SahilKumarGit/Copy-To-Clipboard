@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('clipboardAPI', {
   requestPermissions: () => ipcRenderer.invoke('request-permissions'),
   onClipboardChanged: (callback) => {
     ipcRenderer.on('clipboard-item-added', (_event, item) => callback(item));
+  },
+  onWindowShown: (callback) => {
+    ipcRenderer.on('window-shown', () => callback());
   }
 });
 

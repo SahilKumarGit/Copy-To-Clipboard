@@ -38,6 +38,14 @@ class PasteInjector {
   static checkPermissions(prompt = false) {
     if (process.platform === 'darwin') {
       try {
+        if (prompt) {
+          const helperPath = this.getMacHelperPath();
+          if (helperPath) {
+            try {
+              execFileSync(helperPath, ['--request-ax'], { timeout: 1000 });
+            } catch (_) {}
+          }
+        }
         return systemPreferences.isTrustedAccessibilityClient(prompt);
       } catch (err) {
         console.warn('[PasteInjector] Error checking accessibility:', err);
