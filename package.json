@@ -39,7 +39,8 @@
         "AppImage",
         "tar.gz",
         "deb"
-      ]
+      ],
+      "maintainer": "Sahil Kumar Sahoo <email.sahil@yahoo.com>"
     }
   },
   "devDependencies": {
@@ -52,6 +53,9 @@
     "ubuntu",
     "macos"
   ],
-  "author": "",
+  "author": {
+    "name": "Sahil Kumar Sahoo",
+    "email": "email.sahil@yahoo.com"
+  },
   "license": "MIT"
 }
