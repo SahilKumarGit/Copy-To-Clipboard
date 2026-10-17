@@ -64,35 +64,13 @@ build_from_source() {
     cp -R "$APP_OUT" "/Applications/ClipboardManager.app"
     xattr -cr "/Applications/ClipboardManager.app" 2>/dev/null || true
 
+    # Clean up any legacy launch agent plist to prevent restart loops
     LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
     PLIST_PATH="$LAUNCH_AGENT_DIR/com.clipboardmanager.app.plist"
-    mkdir -p "$LAUNCH_AGENT_DIR"
-    cat <<'EOF' > "$PLIST_PATH"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.clipboardmanager.app</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/Applications/ClipboardManager.app/Contents/MacOS/ClipboardManager</string>
-        <string>--hidden</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>ThrottleInterval</key>
-    <integer>2</integer>
-    <key>ProcessType</key>
-    <string>Interactive</string>
-</dict>
-</plist>
-EOF
-    launchctl load -w "$PLIST_PATH" 2>/dev/null || true
+    launchctl bootout "gui/$(id -u)/com.clipboardmanager.app" 2>/dev/null || launchctl unload -w "$PLIST_PATH" 2>/dev/null || true
+    rm -f "$PLIST_PATH" 2>/dev/null || true
 
-    open "/Applications/ClipboardManager.app"
+    open "/Applications/ClipboardManager.app" --args --hidden
   fi
   echo -e "${GREEN}✓ Successfully built and installed from source!${NC}"
   exit 0
@@ -193,40 +171,17 @@ if [ "$OS" = "Darwin" ]; then
   # Strip macOS Gatekeeper quarantine flag
   xattr -cr "/Applications/ClipboardManager.app" 2>/dev/null || true
 
-  # Setup LaunchAgent for background persistence
+  # Clean up any legacy launch agent plist to prevent restart loops
   LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
   PLIST_PATH="$LAUNCH_AGENT_DIR/com.clipboardmanager.app.plist"
-  mkdir -p "$LAUNCH_AGENT_DIR"
-  cat <<'EOF' > "$PLIST_PATH"
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.clipboardmanager.app</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/Applications/ClipboardManager.app/Contents/MacOS/ClipboardManager</string>
-        <string>--hidden</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>ThrottleInterval</key>
-    <integer>2</integer>
-    <key>ProcessType</key>
-    <string>Interactive</string>
-</dict>
-</plist>
-EOF
-  launchctl load -w "$PLIST_PATH" 2>/dev/null || true
+  launchctl bootout "gui/$(id -u)/com.clipboardmanager.app" 2>/dev/null || launchctl unload -w "$PLIST_PATH" 2>/dev/null || true
+  rm -f "$PLIST_PATH" 2>/dev/null || true
 
   echo -e "${GREEN}✓ Successfully installed to /Applications/ClipboardManager.app${NC}"
 
-  # Launch application
+  # Launch application in background daemon mode
   echo -e "${CYAN}→ Launching Clipboard Manager daemon...${NC}"
-  open "/Applications/ClipboardManager.app"
+  open "/Applications/ClipboardManager.app" --args --hidden
 
   echo ""
   echo -e "${GREEN}${BOLD}════════════════════════════════════════════════════════════${NC}"

@@ -12,11 +12,19 @@ const { LocalSyncProvider } = require('./sync-adapter');
 // Single-instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
-  app.quit();
+  app.exit(0);
 } else {
-  app.on('second-instance', () => {
-    // If user clicks the app in Applications or runs it again, show About/Details window
-    openAboutWindow();
+  app.on('second-instance', (_event, commandLine) => {
+    // If background start or daemon, never show any window
+    if (commandLine && commandLine.some(arg => typeof arg === 'string' && arg.includes('--hidden'))) {
+      return;
+    }
+    // If explicitly asked for about window
+    if (commandLine && commandLine.some(arg => typeof arg === 'string' && arg.includes('--about'))) {
+      openAboutWindow();
+    } else {
+      toggleMainWindow();
+    }
   });
 }
 
@@ -89,7 +97,7 @@ function setAutoStart(enable) {
         openAtLogin: enable,
         openAsHidden: true
       });
-      setupLaunchAgent(enable);
+      cleanLegacyLaunchAgent();
     } else if (process.platform === 'linux') {
       const autostartDir = path.join(os.homedir(), '.config', 'autostart');
       const desktopFile = path.join(autostartDir, 'clipboard-manager.desktop');
@@ -117,49 +125,19 @@ X-GNOME-Autostart-enabled=true
   }
 }
 
-function setupLaunchAgent(enable) {
+function cleanLegacyLaunchAgent() {
   if (process.platform !== 'darwin') return;
   const launchAgentDir = path.join(os.homedir(), 'Library', 'LaunchAgents');
   const plistPath = path.join(launchAgentDir, 'com.clipboardmanager.app.plist');
 
   try {
-    if (enable) {
-      if (!fs.existsSync(launchAgentDir)) {
-        fs.mkdirSync(launchAgentDir, { recursive: true });
-      }
-      const execPath = '/Applications/ClipboardManager.app/Contents/MacOS/ClipboardManager';
-      const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.clipboardmanager.app</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>${execPath}</string>
-        <string>--hidden</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>ThrottleInterval</key>
-    <integer>2</integer>
-    <key>ProcessType</key>
-    <string>Interactive</string>
-</dict>
-</plist>
-`;
-      fs.writeFileSync(plistPath, plistContent, 'utf8');
-      spawn('/bin/launchctl', ['load', '-w', plistPath], { stdio: 'ignore' });
-    } else {
-      if (fs.existsSync(plistPath)) {
-        spawn('/bin/launchctl', ['unload', '-w', plistPath], { stdio: 'ignore' });
-        try { fs.unlinkSync(plistPath); } catch (_) {}
-      }
+    if (fs.existsSync(plistPath)) {
+      spawn('/bin/launchctl', ['bootout', `gui/${process.getuid ? process.getuid() : 501}/com.clipboardmanager.app`], { stdio: 'ignore' });
+      spawn('/bin/launchctl', ['unload', '-w', plistPath], { stdio: 'ignore' });
+      try { fs.unlinkSync(plistPath); } catch (_) {}
     }
   } catch (err) {
-    console.warn('[LaunchAgent] Error configuring launch agent:', err.message);
+    console.warn('[LaunchAgent] Error cleaning legacy launch agent:', err.message);
   }
 }
 
@@ -237,7 +215,7 @@ function createTray() {
       label: 'Quit',
       click: () => {
         app.isQuitting = true;
-        setupLaunchAgent(false);
+        cleanLegacyLaunchAgent();
         app.quit();
       }
     }
@@ -474,7 +452,7 @@ function setupIPC() {
     try {
       // 1. Disable autostart
       setAutoStart(false);
-      setupLaunchAgent(false);
+      cleanLegacyLaunchAgent();
 
       // 2. Stop active listener and hotkeys
       if (hotkeyManager) hotkeyManager.unregisterAll();
@@ -524,6 +502,8 @@ function setupIPC() {
 
 // App lifecycle
 app.whenReady().then(() => {
+  cleanLegacyLaunchAgent();
+
   // On macOS, run purely as a menu bar HUD without taking up a dock icon
   if (process.platform === 'darwin' && app.dock) {
     app.dock.hide();

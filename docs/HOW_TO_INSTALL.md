@@ -128,8 +128,7 @@ System Settings
 
 Clipboard Manager is designed to function as an invisible, zero-maintenance background daemon:
 
-- **Built-in Startup**: During initial launch, the app automatically registers with **macOS Login Items** and `launchd` (`~/Library/LaunchAgents/com.clipboardmanager.app.plist`).
-- **Daemon Resilience**: If the app is closed in the task manager or the window is closed, `launchd` keeps the daemon alive in the background.
+- **Built-in Startup**: During initial launch, the app automatically registers with native **macOS Login Items** (`app.setLoginItemSettings`).
 - **Verification**:
   - Open **System Settings** → **General** → **Login Items**.
   - Confirm **ClipboardManager** is listed under **"Open at Login"**.
@@ -144,20 +143,20 @@ Clipboard Manager is designed to function as an invisible, zero-maintenance back
    - Click the Menu Bar icon and select **"About Clipboard Manager..."**.
 2. Click **"Uninstall Clipboard Manager"** at the bottom.
 3. In the confirmation modal, optionally check *"Also delete saved clipboard history"*.
-4. Click **"Yes, Uninstall"**. The app unloads the launch agent, safely deletes `/Applications/ClipboardManager.app`, and exits.
+4. Click **"Yes, Uninstall"**. The app disables autostart, safely deletes `/Applications/ClipboardManager.app`, and exits.
 
 ### Method 2: Manual Removal via Terminal
 ```bash
-# 1. Unload launch agent
-launchctl unload -w ~/Library/LaunchAgents/com.clipboardmanager.app.plist 2>/dev/null || true
-rm -f ~/Library/LaunchAgents/com.clipboardmanager.app.plist
-
-# 2. Stop running process
+# 1. Stop running process
 killall ClipboardManager 2>/dev/null || true
+
+# 2. Clean any legacy launch agent plist
+launchctl bootout gui/$(id -u)/com.clipboardmanager.app 2>/dev/null || true
+rm -f ~/Library/LaunchAgents/com.clipboardmanager.app.plist 2>/dev/null || true
 
 # 3. Remove application bundle
 rm -rf /Applications/ClipboardManager.app
 
 # 4. (Optional) Wipe clipboard history database and assets
-rm -rf "$HOME/Library/Application Support/clipboard-history"
+rm -rf "$HOME/Library/Application Support/copy-to-clipboard"
 ```
