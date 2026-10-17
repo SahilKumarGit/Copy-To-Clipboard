@@ -111,10 +111,13 @@ int main(int argc, const char * argv[]) {
         }
 
         if (targetApp) {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-            [targetApp activateWithOptions:NSApplicationActivateIgnoringOtherApps];
-#pragma clang diagnostic pop
+            // Only activate if NOT already the frontmost application.
+            // Never use NSApplicationActivateIgnoringOtherApps when the app is already active,
+            // because if the app has a full-screen window on another space (e.g. Chrome with 1 fullscreen tab
+            // and 1 standard window), activateIgnoringOtherApps forces macOS Mission Control to switch spaces!
+            if (![targetApp isActive]) {
+                [targetApp activateWithOptions:0];
+            }
         }
 
         post_cmd_v(target_pid);

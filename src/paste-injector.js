@@ -119,14 +119,8 @@ class PasteInjector {
     }
   }
 
-  static _simulatePasteAppleScript(targetPid) {
-    const safePid = (targetPid && Number.isInteger(Number(targetPid)) && Number(targetPid) > 0) ? parseInt(targetPid, 10) : null;
-    const args = [];
-
-    if (safePid) {
-      args.push('-e', `tell application "System Events" to set frontmost of the first process whose unix id is ${safePid} to true`);
-    }
-    args.push('-e', 'tell application "System Events" to key code 9 using command down');
+  static _simulatePasteAppleScript(_targetPid) {
+    const args = ['-e', 'tell application "System Events" to key code 9 using command down'];
 
     execFile('/usr/bin/osascript', args, (err) => {
       if (err) {

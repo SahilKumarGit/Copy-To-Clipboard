@@ -230,6 +230,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: WIN_WIDTH,
     height: WIN_HEIGHT,
+    type: process.platform === 'darwin' ? 'panel' : undefined,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
@@ -263,9 +264,14 @@ function createWindow() {
     }
   });
 
-  // Enable on all workspaces so macOS allows window to jump to any monitor / Space
-  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  mainWindow.setAlwaysOnTop(true, 'floating', 1);
+  // Enable on all workspaces with skipTransformProcessType: true so macOS does NOT switch Spaces
+  if (process.platform === 'darwin') {
+    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+    mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+  } else {
+    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    mainWindow.setAlwaysOnTop(true, 'floating', 1);
+  }
 
   mainWindow.loadFile(path.join(__dirname, '../ui/index.html'));
 
@@ -332,7 +338,11 @@ function toggleWindow() {
       previousAppPid = activePid;
     }
 
-    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+    if (process.platform === 'darwin') {
+      mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+      mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+    }
+
     positionWindow();
     mainWindow.show();
     mainWindow.focus();
@@ -366,7 +376,6 @@ function setupIPC() {
   ipcMain.handle('hide-window', () => {
     if (mainWindow && mainWindow.isVisible()) {
       mainWindow.hide();
-      if (process.platform === 'darwin') app.hide();
     }
   });
 
@@ -402,9 +411,6 @@ function setupIPC() {
     // 2. Hide HUD window and surrender active focus back to the target application
     if (mainWindow && mainWindow.isVisible()) {
       mainWindow.hide();
-    }
-    if (process.platform === 'darwin') {
-      app.hide();
     }
 
     // If macOS Accessibility permissions are not granted, prompt the user

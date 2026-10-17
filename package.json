@@ -1,6 +1,6 @@
 {
   "name": "copy-to-clipboard",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Cross-platform lightweight clipboard manager for Ubuntu Linux and macOS",
   "main": "src/main.js",
   "scripts": {
