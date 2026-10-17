@@ -55,6 +55,7 @@ function openAboutWindow() {
     transparent: true,
     resizable: false,
     alwaysOnTop: true,
+    skipTaskbar: true,
     center: true,
     backgroundColor: '#00000000',
     hasShadow: true,
