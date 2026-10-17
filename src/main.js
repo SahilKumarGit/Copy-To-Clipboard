@@ -42,7 +42,7 @@ function openAboutWindow() {
 
   aboutWindow = new BrowserWindow({
     width: 360,
-    height: 480,
+    height: 490,
     frame: false,
     transparent: true,
     resizable: false,

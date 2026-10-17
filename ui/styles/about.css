@@ -1,13 +1,36 @@
-/* About Window Styling */
+/* About Window Specific Styling */
+
+body {
+  margin: 0;
+  padding: 8px;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  background: transparent !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #f3f4f6;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Card Container */
 .about-container {
   width: 100%;
   height: 100%;
-  padding: 24px;
+  padding: 20px 18px 16px;
+  background: #181a20;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 /* Header */
@@ -16,60 +39,60 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-top: 6px;
 }
 
 .app-icon-wrapper {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border-radius: 14px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .app-icon {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   stroke: #ffffff;
 }
 
 .app-title {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.3px;
-  color: var(--text-main);
-  margin-bottom: 2px;
+  color: #ffffff;
+  margin-bottom: 4px;
 }
 
 .app-version {
   font-size: 11px;
   font-weight: 600;
-  color: var(--accent-blue);
-  background: rgba(59, 130, 246, 0.15);
-  padding: 1.5px 7px;
-  border-radius: var(--radius-pill);
-  margin-bottom: 6px;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 1.5px 8px;
+  border-radius: 9999px;
+  margin-bottom: 5px;
 }
 
 .app-subtitle {
-  font-size: 11.5px;
-  color: var(--text-dim);
+  font-size: 11px;
+  color: #9ca3af;
 }
 
 /* Details Section */
 .details-section {
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 9px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 16px 0;
+  margin: 10px 0;
 }
 
 .detail-row {
@@ -80,19 +103,29 @@
 }
 
 .detail-label {
-  color: var(--text-muted);
+  color: #9ca3af;
 }
 
 .detail-value {
-  color: var(--text-main);
+  color: #f3f4f6;
   font-weight: 500;
+}
+
+.detail-value kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10px;
+  color: #e5e7eb;
 }
 
 /* Toggle Switch */
 .switch {
   position: relative;
   display: inline-block;
-  width: 34px;
+  width: 32px;
   height: 18px;
 }
 
@@ -127,11 +160,11 @@
 }
 
 input:checked + .slider {
-  background-color: var(--accent-blue);
+  background-color: #3b82f6;
 }
 
 input:checked + .slider:before {
-  transform: translateX(16px);
+  transform: translateX(14px);
 }
 
 /* Bottom Actions Area */
@@ -139,25 +172,26 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .uninstall-link-btn {
   background: transparent;
   border: none;
-  color: var(--text-dim);
-  font-size: 10.5px;
+  color: #6b7280;
+  font-size: 11px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 6px;
-  border-radius: var(--radius-sm);
-  transition: color 0.1s ease;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  transition: all 0.15s ease;
 }
 
 .uninstall-link-btn:hover {
-  color: var(--accent-red);
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .bottom-center {
@@ -167,21 +201,22 @@ input:checked + .slider:before {
 }
 
 .close-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: var(--text-main);
+  background: #3b82f6;
+  border: none;
+  color: #ffffff;
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 36px;
-  border-radius: var(--radius-sm);
+  padding: 7px 48px;
+  border-radius: 7px;
   cursor: pointer;
-  transition: all 0.12s ease;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.25);
+  background: #2563eb;
   transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.45);
 }
 
 /* Modal Overlay for Uninstall Confirmation */
@@ -191,43 +226,44 @@ input:checked + .slider:before {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 16px;
   z-index: 100;
+  border-radius: 14px;
 }
 
 .confirm-modal {
-  background: #1c1e24;
+  background: #1e2027;
   border: 1px solid rgba(239, 68, 68, 0.35);
-  border-radius: var(--radius-md);
-  padding: 18px;
+  border-radius: 10px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8);
 }
 
 .modal-icon-danger {
-  color: var(--accent-red);
-  margin-bottom: 8px;
+  color: #ef4444;
+  margin-bottom: 6px;
 }
 
 .modal-title {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
-  color: var(--text-main);
+  color: #ffffff;
   margin-bottom: 6px;
 }
 
 .modal-desc {
   font-size: 11px;
   line-height: 1.45;
-  color: var(--text-muted);
+  color: #9ca3af;
   margin-bottom: 12px;
 }
 
@@ -236,8 +272,8 @@ input:checked + .slider:before {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: var(--text-muted);
-  margin-bottom: 16px;
+  color: #9ca3af;
+  margin-bottom: 14px;
 }
 
 .modal-buttons {
@@ -251,15 +287,15 @@ input:checked + .slider:before {
   padding: 6px 10px;
   font-size: 11.5px;
   font-weight: 600;
-  border-radius: var(--radius-sm);
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.1s ease;
 }
 
 .cancel-btn {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
 }
 
 .cancel-btn:hover {
@@ -267,7 +303,7 @@ input:checked + .slider:before {
 }
 
 .confirm-danger-btn {
-  background: var(--accent-red);
+  background: #ef4444;
   border: none;
   color: #ffffff;
 }
