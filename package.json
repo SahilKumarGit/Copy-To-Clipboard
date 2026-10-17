@@ -1,6 +1,6 @@
 {
   "name": "copy-to-clipboard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Cross-platform lightweight clipboard manager for Ubuntu Linux and macOS",
   "main": "src/main.js",
   "scripts": {
@@ -27,7 +27,8 @@
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "build/icon.icns",
-      "identity": null,
+      "identity": "-",
+      "hardenedRuntime": false,
       "target": [
         "dmg",
         "zip"
