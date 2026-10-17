@@ -1,8 +1,53 @@
 # 📋 Clipboard Manager (macOS & Ubuntu Linux)
 
-A lightning-fast, ultra-lightweight, cross-platform clipboard manager with instant floating HUD, auto-paste into active inputs, auto-start on boot, Font Awesome vector icons, strict Non-SQL atomic storage, and automated GitHub CI/CD releases.
+<div align="center">
+  <img src="docs/screenshots/app-icon.png" width="90" height="90" alt="Clipboard Manager Logo" /><br/>
+  <b>A lightning-fast, ultra-lightweight, cross-platform clipboard manager.</b><br/>
+  <i>Features an instant floating acrylic HUD, auto-paste into active apps, zero Dock footprint, Font Awesome vector UI, atomic Non-SQL storage, and automated GitHub CI/CD releases.</i>
+</div>
+
+<br/>
+
+<p align="center">
+  <img src="docs/screenshots/hud-preview.png" width="330" alt="Clipboard Manager Floating HUD" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/about-preview.png" width="330" alt="Clipboard Manager About & Settings" />
+</p>
 
 ---
+
+## 📸 Visual Showcase & How It Works
+
+### 1. Instant Cursor-Anchored Floating HUD (`Cmd+Shift+V` / `Ctrl+Shift+V`)
+Whenever you copy text, code, hex color codes, or images, Clipboard Manager captures them silently. Press your global hotkey and the floating acrylic HUD appears instantly anchored right beside your mouse pointer — on whichever monitor or desktop workspace you are working on:
+
+<p align="center">
+  <img src="docs/screenshots/hud-preview.png" width="360" alt="Clipboard Manager HUD" />
+</p>
+
+- **One-Click Auto-Paste**: Click any item card (or highlight with `↑` / `↓` and press `Enter`) — the HUD immediately dismisses and automatically injects a native `Cmd+V` / `Ctrl+V` keystroke directly into your active input field.
+- **Smart Classification**: Auto-detects programming languages, web links, hex color swatches, plain text, and bitmap images.
+- **Pinning**: Star your favorite snippets to keep them permanently saved in the 50-item FIFO ring buffer.
+- **Zero Dock Footprint**: Operates as a pure macOS background accessory daemon (`LSUIElement: true`) — never clutters your bottom Dock toolbar.
+
+### 2. Interactive Settings & Details
+Click the Menu Bar icon or open the app from Applications to access system status, autostart toggle, and uninstallation:
+
+<p align="center">
+  <img src="docs/screenshots/about-preview.png" width="330" alt="About Window" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/uninstall-preview.png" width="330" alt="Uninstall Modal" />
+</p>
+
+- **Autostart Control**: Native integration with macOS Login Items and Linux autostart.
+- **Built-in Safe Uninstaller**: Cleanly removes the application bundle and startup entries with optional clipboard history wipe.
+
+### 3. Integrated Permission Helper & Guide
+If macOS Accessibility permissions are needed for keystroke simulation, a clean amber banner guides the user with a 1-click **Grant** button (opens System Settings directly) and a **View how to do that** link:
+
+<p align="center">
+  <img src="docs/screenshots/permission-banner.png" width="360" alt="Permission Banner" />
+</p>
 
 ## ⚡ Instant Install (Prebuilt Binaries)
 

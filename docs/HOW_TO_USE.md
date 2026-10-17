@@ -6,6 +6,8 @@ Welcome to **Clipboard Manager** — a lightning-fast, ultra-compact, cross-plat
 
 ## ⚡ 1. Summoning the Clipboard HUD
 
+![Clipboard Manager HUD Preview](screenshots/hud-preview.png)
+
 Whenever you need your clipboard history, press the global hotkey from any application or screen:
 
 - **macOS**: `Cmd + Shift + V`
@@ -103,4 +105,13 @@ If you click **Clipboard Manager** inside your Applications folder or launch it 
   - Supported Media Types
   - **Launch at Startup Toggle** (turn on/off auto-start on reboot)
   - Built-in **Uninstall Clipboard Manager** option
+
+![About & Settings Preview](screenshots/about-preview.png)
+
 - To close the pop-up, simply click the prominent **Close** button at the bottom center or press `Esc`.
+
+### Built-in Safe Uninstaller
+From the About window, you can also safely remove the app and optionally wipe cached clipboard history:
+
+![Uninstall Modal Preview](screenshots/uninstall-preview.png)
+

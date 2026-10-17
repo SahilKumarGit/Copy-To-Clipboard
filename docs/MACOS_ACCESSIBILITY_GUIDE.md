@@ -15,6 +15,10 @@ When you click an item in Clipboard Manager, the app automatically:
 
 Without Accessibility permissions, macOS blocks the synthetic paste event, requiring you to manually press `Cmd + V`.
 
+When running without permission, Clipboard Manager displays a non-intrusive warning banner at the top of the HUD:
+
+![macOS Accessibility Warning Banner](screenshots/permission-banner.png)
+
 ---
 
 ## 🧭 Step-by-Step Instructions

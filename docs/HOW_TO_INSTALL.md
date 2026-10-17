@@ -86,6 +86,8 @@ If you download the `.dmg` or `.zip` directly through a web browser (Google Chro
 
 > *“ClipboardManager” is damaged and can’t be opened. You should move it to the Bin.*
 
+![macOS Gatekeeper Warning Dialog](screenshots/macos-gatekeeper-warning.png)
+
 **The application is NOT damaged.** This is standard macOS Gatekeeper behavior for downloaded unsigned binaries.
 
 ### Quick Fix (Run in Terminal):
@@ -144,6 +146,8 @@ Clipboard Manager is designed to function as an invisible, zero-maintenance back
 2. Click **"Uninstall Clipboard Manager"** at the bottom.
 3. In the confirmation modal, optionally check *"Also delete saved clipboard history"*.
 4. Click **"Yes, Uninstall"**. The app disables autostart, safely deletes `/Applications/ClipboardManager.app`, and exits.
+
+![Uninstall Modal](screenshots/uninstall-preview.png)
 
 ### Method 2: Manual Removal via Terminal
 ```bash
