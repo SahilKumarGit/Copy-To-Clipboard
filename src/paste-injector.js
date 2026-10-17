@@ -54,6 +54,34 @@ class PasteInjector {
     return true;
   }
 
+  static openAccessibilitySettings() {
+    if (process.platform === 'darwin') {
+      try {
+        exec('open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"');
+      } catch (err) {
+        console.warn('[PasteInjector] Error opening accessibility settings:', err);
+      }
+    }
+  }
+
+  static requestPermissions() {
+    if (process.platform === 'darwin') {
+      try {
+        systemPreferences.isTrustedAccessibilityClient(true);
+        const helperPath = this.getMacHelperPath();
+        if (helperPath) {
+          try {
+            execFileSync(helperPath, ['--request-ax'], { timeout: 1000 });
+          } catch (_) {}
+        }
+      } catch (_) {}
+
+      this.openAccessibilitySettings();
+      return systemPreferences.isTrustedAccessibilityClient(false);
+    }
+    return true;
+  }
+
   static simulatePaste(targetPid = null) {
     const isMac = process.platform === 'darwin';
     const isLinux = process.platform === 'linux';

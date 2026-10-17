@@ -57,11 +57,26 @@ class ClipboardApp {
     if (grantBtn) {
       grantBtn.addEventListener('click', async () => {
         if (window.clipboardAPI && window.clipboardAPI.requestPermissions) {
+          grantBtn.textContent = 'Opening...';
           await window.clipboardAPI.requestPermissions();
-          setTimeout(() => this.checkAccessibility(), 1000);
+          
+          let attempts = 0;
+          const interval = setInterval(async () => {
+            attempts++;
+            const isGranted = await this.checkAccessibility();
+            if (isGranted || attempts > 20) {
+              clearInterval(interval);
+              grantBtn.textContent = 'Grant';
+            }
+          }, 1000);
         }
       });
     }
+
+    // Refresh accessibility state when window regains focus
+    window.addEventListener('focus', () => {
+      this.checkAccessibility();
+    });
 
     // Listen for real-time copy events pushed from main process
     if (window.clipboardAPI) {

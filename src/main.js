@@ -396,7 +396,7 @@ function setupIPC() {
   });
 
   ipcMain.handle('request-permissions', () => {
-    return PasteInjector.checkPermissions(true);
+    return PasteInjector.requestPermissions();
   });
 
   let isPasting = false;
