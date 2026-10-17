@@ -73,6 +73,18 @@ class ClipboardApp {
       });
     }
 
+    // Permission guide button ("View how to do that")
+    const guideBtn = document.getElementById('view-guide-btn');
+    if (guideBtn) {
+      guideBtn.addEventListener('click', () => {
+        if (window.clipboardAPI && window.clipboardAPI.openGuide) {
+          window.clipboardAPI.openGuide();
+        } else {
+          window.open('https://github.com/SahilKumarGit/Copy-To-Clipboard/blob/main/docs/MACOS_ACCESSIBILITY_GUIDE.md', '_blank');
+        }
+      });
+    }
+
     // Refresh accessibility state when window regains focus
     window.addEventListener('focus', () => {
       this.checkAccessibility();

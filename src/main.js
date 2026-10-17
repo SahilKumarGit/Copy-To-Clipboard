@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen, nativeImage, Tray, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, nativeImage, Tray, Menu, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -397,6 +397,10 @@ function setupIPC() {
 
   ipcMain.handle('request-permissions', () => {
     return PasteInjector.requestPermissions();
+  });
+
+  ipcMain.handle('open-accessibility-guide', () => {
+    shell.openExternal('https://github.com/SahilKumarGit/Copy-To-Clipboard/blob/main/docs/MACOS_ACCESSIBILITY_GUIDE.md');
   });
 
   let isPasting = false;

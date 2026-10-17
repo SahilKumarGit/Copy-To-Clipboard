@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('clipboardAPI', {
   hideWindow: () => ipcRenderer.invoke('hide-window'),
   checkPermissions: () => ipcRenderer.invoke('check-permissions'),
   requestPermissions: () => ipcRenderer.invoke('request-permissions'),
+  openGuide: () => ipcRenderer.invoke('open-accessibility-guide'),
   onClipboardChanged: (callback) => {
     ipcRenderer.on('clipboard-item-added', (_event, item) => callback(item));
   },
