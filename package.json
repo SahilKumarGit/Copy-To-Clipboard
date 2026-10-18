@@ -35,7 +35,6 @@
       },
       "target": [
         "dmg",
-        "zip",
         "tar.xz"
       ],
       "artifactName": "${productName}-${version}-${arch}-mac.${ext}"
@@ -45,7 +44,6 @@
       "icon": "build/icon.png",
       "target": [
         "tar.xz",
-        "AppImage",
         "deb"
       ],
       "maintainer": "Sahil Kumar Sahoo <email.sahil@yahoo.com>",

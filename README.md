@@ -68,7 +68,7 @@ curl -fsSL https://raw.githubusercontent.com/SahilKumarGit/Copy-To-Clipboard/mai
 
 When code is merged to `main` or `master`, the GitHub Actions pipeline ([`.github/workflows/release.yml`](.github/workflows/release.yml)) automatically:
 1. Runs the test suite across platforms.
-2. Compiles native Cocoa helpers and packages standalone `.app`, `.dmg`, and `.zip` for macOS (Apple Silicon & Intel) and `.AppImage`, `.tar.gz`, and `.deb` for Linux.
+2. Compiles native Cocoa helpers and packages standalone `.dmg` and `.tar.xz` for macOS (Apple Silicon & Intel) and `.tar.xz` and `.deb` for Linux.
 3. Automatically publishes a versioned GitHub Release with SHA-256 checksums.
 4. Makes the release immediately available to the one-line installer.
 

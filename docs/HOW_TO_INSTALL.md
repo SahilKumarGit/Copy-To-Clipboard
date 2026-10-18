@@ -46,9 +46,9 @@ Located at [`.github/workflows/release.yml`](../.github/workflows/release.yml):
 - **macOS Build Job (`macos-latest`)**:
   - Sets up Node.js v20.
   - Compiles the native Cocoa paste injector with Clang (`native/paste-helper-mac.m` → `bin/paste-helper-mac`).
-  - Packages standalone `.zip` and `.dmg` binaries for both **Apple Silicon (`arm64`)** and **Intel (`x64`)**.
+  - Packages standalone `.dmg` and `.tar.xz` binaries for both **Apple Silicon (`arm64`)** and **Intel (`x64`)**.
 - **Linux Build Job (`ubuntu-latest`)**:
-  - Packages `.AppImage`, `.tar.gz`, and `.deb` for standard Linux distributions.
+  - Packages `.tar.xz` and `.deb` for standard Linux distributions.
 - **Release Publisher Job**:
   - Reads version from `package.json` (`v1.0.0`).
   - Computes cryptographic SHA-256 checksums (`SHA256SUMS.txt`).
@@ -82,7 +82,7 @@ open /Applications/ClipboardManager.app
 
 ## 🛡️ macOS Gatekeeper: "ClipboardManager is damaged and can't be opened"
 
-If you download the `.dmg` or `.zip` directly through a web browser (Google Chrome, Safari), macOS automatically tags the file with a quarantine attribute (`com.apple.quarantine`). On macOS Sonoma and Sequoia, unsigned open-source applications will display:
+If you download the `.dmg` or `.tar.xz` directly through a web browser (Google Chrome, Safari), macOS automatically tags the file with a quarantine attribute (`com.apple.quarantine`). On macOS Sonoma and Sequoia, unsigned open-source applications will display:
 
 > *“ClipboardManager” is damaged and can’t be opened. You should move it to the Bin.*
 
