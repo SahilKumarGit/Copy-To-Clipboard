@@ -1,6 +1,6 @@
 {
   "name": "copy-to-clipboard",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Cross-platform lightweight clipboard manager for Ubuntu Linux and macOS",
   "main": "src/main.js",
   "scripts": {
@@ -30,7 +30,8 @@
       "identity": "-",
       "hardenedRuntime": false,
       "extendInfo": {
-        "LSUIElement": true
+        "LSUIElement": true,
+        "NSAppSleepDisabled": true
       },
       "target": [
         "dmg",

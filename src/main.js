@@ -9,6 +9,28 @@ const { HotkeyManager } = require('./hotkey');
 const { PasteInjector } = require('./paste-injector');
 const { LocalSyncProvider } = require('./sync-adapter');
 
+// Background daemon has no terminal, so mirror console output to a size-capped log file
+// (macOS: ~/Library/Logs/<app>/main.log, Linux: ~/.config/<app>/logs/main.log)
+const MAX_LOG_BYTES = 1024 * 1024;
+function setupFileLogging() {
+  try {
+    const logFile = path.join(app.getPath('logs'), 'main.log');
+    fs.mkdirSync(path.dirname(logFile), { recursive: true });
+    if (fs.existsSync(logFile) && fs.statSync(logFile).size > MAX_LOG_BYTES) {
+      fs.renameSync(logFile, `${logFile}.old`);
+    }
+    const stream = fs.createWriteStream(logFile, { flags: 'a' });
+    ['log', 'warn', 'error'].forEach((level) => {
+      const original = console[level].bind(console);
+      console[level] = (...args) => {
+        original(...args);
+        const line = args.map(a => (a instanceof Error ? a.stack : typeof a === 'string' ? a : JSON.stringify(a))).join(' ');
+        stream.write(`${new Date().toISOString()} [${level}] ${line}\n`);
+      };
+    });
+  } catch (_) {}
+}
+
 // Single-instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -23,7 +45,7 @@ if (!gotTheLock) {
     if (commandLine && commandLine.some(arg => typeof arg === 'string' && arg.includes('--about'))) {
       openAboutWindow();
     } else {
-      toggleMainWindow();
+      toggleWindow();
     }
   });
 }
@@ -38,6 +60,7 @@ let tray = null;
 let previousAppPid = null;
 let lastShownAt = 0;
 let rendererAckTimer = null;
+let rendererCrashTimes = [];
 
 // Compact minimal window dimensions
 const WIN_WIDTH = 340;
@@ -47,6 +70,11 @@ const WIN_HEIGHT = 430;
 const BLUR_GRACE_MS = 250;
 // Reload the HUD if its renderer doesn't answer a 'window-shown' ping within this time
 const RENDERER_ACK_TIMEOUT_MS = 1500;
+// Auto-reload a crashed renderer at most this many times per window of time
+const MAX_RENDERER_CRASHES = 3;
+const RENDERER_CRASH_WINDOW_MS = 60 * 1000;
+// How often to verify the OS still delivers our global shortcut
+const HOTKEY_CHECK_INTERVAL_MS = 60 * 1000;
 
 function openAboutWindow() {
   if (aboutWindow && !aboutWindow.isDestroyed()) {
@@ -278,10 +306,21 @@ function createWindow() {
   });
 
   // Recover from renderer crashes / hangs instead of leaving a blank HUD forever
+  // Any exit counts: the OS can also terminate an idle hidden renderer "cleanly", which still leaves
+  // an empty transparent window that looks like the HUD never opened.
   win.webContents.on('render-process-gone', (_e, details) => {
     console.warn('[HUD] Renderer gone:', details.reason);
-    if (!win.isDestroyed() && details.reason !== 'clean-exit') {
-      win.webContents.reload();
+    if (app.isQuitting || win.isDestroyed()) return;
+
+    const now = Date.now();
+    rendererCrashTimes = rendererCrashTimes.filter(t => now - t < RENDERER_CRASH_WINDOW_MS);
+    rendererCrashTimes.push(now);
+    // Stop eager reloads in a crash loop; showWindow() still rebuilds the window on the next hotkey press
+    if (rendererCrashTimes.length <= MAX_RENDERER_CRASHES) {
+      // Reloading synchronously inside this event aborts the whole app (SIGTRAP), so defer it
+      setTimeout(() => {
+        if (!win.isDestroyed()) win.webContents.reload();
+      }, 100);
     }
   });
 
@@ -372,6 +411,12 @@ function positionWindow() {
 
 function showWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
+    createWindow();
+  } else if (mainWindow.webContents.isCrashed()) {
+    // Renderer died while hidden and wasn't reloaded: start over with a fresh window
+    console.warn('[HUD] Renderer was dead on show, recreating window');
+    mainWindow.destroy();
+    mainWindow = null;
     createWindow();
   }
 
@@ -598,6 +643,8 @@ function setupIPC() {
 
 // App lifecycle
 app.whenReady().then(() => {
+  setupFileLogging();
+  console.log(`[App] Starting v${app.getVersion()} on ${process.platform}`);
   cleanLegacyLaunchAgent();
 
   // On macOS, run purely as a menu bar HUD without taking up a dock icon
@@ -638,8 +685,24 @@ app.whenReady().then(() => {
     toggleWindow();
   });
 
+  // The OS can silently drop the hotkey grab across sleep, screen lock or keyboard/layout changes
+  // (notably X11 on Ubuntu), so re-register it then and verify it periodically.
+  setInterval(() => {
+    // On X11 isRegistered() only reflects Electron's own bookkeeping, not whether the X server still
+    // honours the key grab, so re-grab outright there (cheap) while the HUD isn't in use.
+    if (process.platform === 'linux' && !(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible())) {
+      hotkeyManager.refresh();
+    } else {
+      hotkeyManager.ensureRegistered();
+    }
+  }, HOTKEY_CHECK_INTERVAL_MS);
+  powerMonitor.on('unlock-screen', () => hotkeyManager.refresh());
+
   // A hidden HUD can lose its compositor surface across these events and later show up blank
-  powerMonitor.on('resume', () => recreateHiddenWindow('system resume'));
+  powerMonitor.on('resume', () => {
+    hotkeyManager.refresh();
+    recreateHiddenWindow('system resume');
+  });
   screen.on('display-added', () => recreateHiddenWindow('display added'));
   screen.on('display-removed', () => recreateHiddenWindow('display removed'));
   app.on('child-process-gone', (_e, details) => {

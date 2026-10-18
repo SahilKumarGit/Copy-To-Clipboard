@@ -14,7 +14,8 @@ class HotkeyManager {
     this.registeredShortcuts = [];
   }
 
-  register(onTrigger) {
+  register(onTrigger, { quiet = false } = {}) {
+    this.onTrigger = onTrigger;
     this.shortcuts.forEach((sc) => {
       try {
         const ok = globalShortcut.register(sc, () => {
@@ -24,8 +25,8 @@ class HotkeyManager {
         });
         if (ok) {
           this.registeredShortcuts.push(sc);
-          console.log(`[HotkeyManager] Registered global shortcut: ${sc}`);
-        } else {
+          if (!quiet) console.log(`[HotkeyManager] Registered global shortcut: ${sc}`);
+        } else if (!quiet) {
           console.warn(`[HotkeyManager] Failed to register global shortcut: ${sc}`);
         }
       } catch (err) {
@@ -43,6 +44,31 @@ class HotkeyManager {
 
   unregisterAll() {
     globalShortcut.unregisterAll();
+  }
+
+  /**
+   * Re-register any shortcut Electron no longer reports as registered
+   */
+  ensureRegistered() {
+    if (!this.onTrigger) return;
+    const missing = this.shortcuts.filter((sc) => !globalShortcut.isRegistered(sc));
+    if (missing.length > 0) {
+      console.warn(`[HotkeyManager] Shortcuts lost, re-registering: ${missing.join(', ')}`);
+      this.refresh();
+    }
+  }
+
+  /**
+   * Drop and re-create the OS-level grabs, for when the OS may have dropped them
+   * while Electron still believes they are registered (sleep/resume, screen unlock)
+   */
+  refresh() {
+    if (!this.onTrigger) return;
+    this.unregister();
+    this.register(this.onTrigger, { quiet: true });
+    if (this.registeredShortcuts.length === 0) {
+      console.warn('[HotkeyManager] Could not re-register any global shortcut');
+    }
   }
 }
 
