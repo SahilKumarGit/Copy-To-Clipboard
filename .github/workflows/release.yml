@@ -10,6 +10,11 @@ on:
 permissions:
   contents: write
 
+# Never let two pushes race to publish the same release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-mac:
     name: Build macOS (Apple Silicon & Intel)
@@ -21,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
@@ -30,11 +35,13 @@ jobs:
       - name: Run test suite
         run: npm test
 
+      # Universal binary: the runner is Apple Silicon, but the x64 build ships the same helper to Intel Macs
       - name: Compile native macOS paste helper
         run: |
           mkdir -p bin
-          clang -Wall -Wextra -Werror -Wno-deprecated-declarations -framework ApplicationServices -framework Cocoa -framework Carbon native/paste-helper-mac.m -o bin/paste-helper-mac
+          clang -arch arm64 -arch x86_64 -Wall -Wextra -Werror -Wno-deprecated-declarations -framework ApplicationServices -framework Cocoa -framework Carbon native/paste-helper-mac.m -o bin/paste-helper-mac
           chmod +x bin/paste-helper-mac
+          lipo -info bin/paste-helper-mac
 
       - name: Package macOS Application (.dmg and .zip for arm64 & x64)
         run: |
@@ -43,8 +50,8 @@ jobs:
       - name: Stage macOS Artifacts
         run: |
           mkdir -p mac-artifacts
-          cp dist/*.dmg mac-artifacts/ 2>/dev/null || true
-          cp dist/*-mac.zip mac-artifacts/ 2>/dev/null || true
+          cp dist/*.dmg mac-artifacts/
+          cp dist/*-mac.zip mac-artifacts/
           ls -lh mac-artifacts/
 
       - name: Upload macOS Artifacts
@@ -52,6 +59,7 @@ jobs:
         with:
           name: mac-artifacts
           path: mac-artifacts/*
+          if-no-files-found: error
 
   build-linux:
     name: Build Linux (AppImage, tar.gz, deb)
@@ -63,7 +71,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
@@ -79,9 +87,9 @@ jobs:
       - name: Stage Linux Artifacts
         run: |
           mkdir -p linux-artifacts
-          cp dist/*.AppImage linux-artifacts/ 2>/dev/null || true
-          cp dist/*.tar.gz linux-artifacts/ 2>/dev/null || true
-          cp dist/*.deb linux-artifacts/ 2>/dev/null || true
+          cp dist/*.AppImage linux-artifacts/
+          cp dist/*.tar.gz linux-artifacts/
+          cp dist/*.deb linux-artifacts/
           ls -lh linux-artifacts/
 
       - name: Upload Linux Artifacts
@@ -89,6 +97,7 @@ jobs:
         with:
           name: linux-artifacts
           path: linux-artifacts/*
+          if-no-files-found: error
 
   release:
     name: Publish Release Version
@@ -101,7 +110,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Read Version from package.json
         id: version
@@ -110,19 +119,34 @@ jobs:
           echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
+      # Only publish when package.json has a new version; otherwise the push would overwrite the
+      # assets of an existing release whose tag still points at an older commit.
+      - name: Skip if release tag already exists
+        id: guard
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null; then
+            echo "Tag ${{ steps.version.outputs.tag }} already exists - bump the version in package.json to publish a release."
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Download all compiled artifacts
+        if: steps.guard.outputs.exists == 'false'
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
 
       - name: Generate Checksums
+        if: steps.guard.outputs.exists == 'false'
         run: |
           cd release-assets
-          sha256sum * > SHA256SUMS.txt || true
+          sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
-      - name: Create or Update GitHub Release
+      - name: Create GitHub Release
+        if: steps.guard.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
