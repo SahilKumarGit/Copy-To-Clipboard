@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, screen, nativeImage, Tray, Menu, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, nativeImage, Tray, Menu, shell, powerMonitor } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -36,10 +36,17 @@ let hotkeyManager = null;
 let syncProvider = null;
 let tray = null;
 let previousAppPid = null;
+let lastShownAt = 0;
+let rendererAckTimer = null;
 
 // Compact minimal window dimensions
 const WIN_WIDTH = 340;
 const WIN_HEIGHT = 430;
+
+// Ignore blur events fired while the window manager is still handing focus to the HUD
+const BLUR_GRACE_MS = 250;
+// Reload the HUD if its renderer doesn't answer a 'window-shown' ping within this time
+const RENDERER_ACK_TIMEOUT_MS = 1500;
 
 function openAboutWindow() {
   if (aboutWindow && !aboutWindow.isDestroyed()) {
@@ -227,17 +234,20 @@ function createTray() {
 }
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
+  const isMac = process.platform === 'darwin';
+  const win = new BrowserWindow({
     width: WIN_WIDTH,
     height: WIN_HEIGHT,
-    type: process.platform === 'darwin' ? 'panel' : undefined,
+    type: isMac ? 'panel' : undefined,
     frame: false,
-    transparent: true,
+    // Transparent windows on Linux frequently come back blank/black after hide/show,
+    // so use an opaque background matching the HUD colour there.
+    transparent: isMac,
     alwaysOnTop: true,
     skipTaskbar: true,
     show: false,
     resizable: false,
-    backgroundColor: '#00000000',
+    backgroundColor: isMac ? '#00000000' : '#14161b',
     hasShadow: true,
     icon: path.join(__dirname, '../ui/icon.png'),
     vibrancy: 'under-window',
@@ -247,52 +257,87 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,
-      allowRunningInsecureContent: false
+      allowRunningInsecureContent: false,
+      // Keep the hidden HUD's renderer painting so it never reappears as a blank frame
+      backgroundThrottling: false
     }
   });
+  mainWindow = win;
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  win.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https:') || url.startsWith('http:')) {
       require('electron').shell.openExternal(url);
     }
     return { action: 'deny' };
   });
 
-  mainWindow.webContents.on('will-navigate', (e, url) => {
-    if (url !== mainWindow.webContents.getURL()) {
+  win.webContents.on('will-navigate', (e, url) => {
+    if (url !== win.webContents.getURL()) {
       e.preventDefault();
     }
   });
 
-  // Enable on all workspaces with skipTransformProcessType: true so macOS does NOT switch Spaces
-  if (process.platform === 'darwin') {
-    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
-    mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-  } else {
-    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    mainWindow.setAlwaysOnTop(true, 'floating', 1);
-  }
+  // Recover from renderer crashes / hangs instead of leaving a blank HUD forever
+  win.webContents.on('render-process-gone', (_e, details) => {
+    console.warn('[HUD] Renderer gone:', details.reason);
+    if (!win.isDestroyed() && details.reason !== 'clean-exit') {
+      win.webContents.reload();
+    }
+  });
 
-  mainWindow.loadFile(path.join(__dirname, '../ui/index.html'));
+  win.webContents.on('unresponsive', () => {
+    console.warn('[HUD] Renderer unresponsive, restarting it');
+    if (!win.isDestroyed()) {
+      win.webContents.forcefullyCrashRenderer();
+    }
+  });
+
+  applyWorkspaceBehavior(win);
+
+  win.loadFile(path.join(__dirname, '../ui/index.html'));
 
   // Automatically hide floating HUD when user clicks away
-  mainWindow.on('blur', () => {
-    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
-      mainWindow.hide();
+  win.on('blur', () => {
+    if (Date.now() - lastShownAt < BLUR_GRACE_MS) return;
+    if (!win.isDestroyed() && win.isVisible()) {
+      hideWindow();
     }
   });
 
   // Never destroy window on close unless quitting
-  mainWindow.on('close', (e) => {
+  win.on('close', (e) => {
     if (!app.isQuitting) {
       e.preventDefault();
-      mainWindow.hide();
+      win.hide();
     }
   });
 
-  mainWindow.on('closed', () => {
-    mainWindow = null;
+  win.on('closed', () => {
+    if (mainWindow === win) {
+      mainWindow = null;
+    }
   });
+}
+
+// Throw away a hidden HUD and build a fresh one (after GPU crashes, sleep/resume, display changes)
+function recreateHiddenWindow(reason) {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isVisible()) return;
+  console.log(`[HUD] Recreating window (${reason})`);
+  mainWindow.destroy();
+  mainWindow = null;
+  createWindow();
+}
+
+function applyWorkspaceBehavior(win = mainWindow) {
+  if (!win || win.isDestroyed()) return;
+  // skipTransformProcessType: true so macOS does NOT switch Spaces
+  if (process.platform === 'darwin') {
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
+    win.setAlwaysOnTop(true, 'screen-saver', 1);
+  } else {
+    win.setVisibleOnAllWorkspaces(true);
+    win.setAlwaysOnTop(true, 'floating', 1);
+  }
 }
 
 function positionWindow() {
@@ -325,31 +370,75 @@ function positionWindow() {
   mainWindow.setBounds({ x, y, width: WIN_WIDTH, height: WIN_HEIGHT });
 }
 
-function toggleWindow() {
+function showWindow() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     createWindow();
   }
-  if (mainWindow.isVisible()) {
-    mainWindow.hide();
-  } else {
-    // Capture frontmost app PID synchronously in 1ms BEFORE showing the HUD
-    const activePid = PasteInjector.getActivePid();
-    if (activePid && activePid !== process.pid) {
-      previousAppPid = activePid;
-    }
 
-    if (process.platform === 'darwin') {
-      mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true, skipTransformProcessType: true });
-      mainWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-    }
-
-    positionWindow();
-    mainWindow.show();
-    mainWindow.focus();
-    if (mainWindow.webContents) {
-      mainWindow.webContents.send('window-shown');
-    }
+  // Capture frontmost app PID synchronously BEFORE showing the HUD
+  const activePid = PasteInjector.getActivePid();
+  if (activePid && activePid !== process.pid) {
+    previousAppPid = activePid;
   }
+
+  applyWorkspaceBehavior();
+  positionWindow();
+  lastShownAt = Date.now();
+
+  if (process.platform === 'darwin') {
+    // show() calls [NSApp activateIgnoringOtherApps:YES], which makes macOS jump to the Space our
+    // app (or Chrome's main window) last lived on. A non-activating panel shown inactive and then
+    // made key stays on the current Space, including full-screen ones, and leaves the target app active.
+    mainWindow.showInactive();
+    mainWindow.focus();
+  } else {
+    mainWindow.show();
+    // Window managers drop the sticky/above state when a window is unmapped, and Electron re-maps it
+    // onto the workspace it remembers, so re-apply after mapping to bring it to the current workspace.
+    applyWorkspaceBehavior();
+    mainWindow.moveTop();
+    mainWindow.focus();
+    const win = mainWindow;
+    setTimeout(() => {
+      if (!win.isDestroyed() && win.isVisible() && !win.isFocused()) {
+        win.focus();
+      }
+    }, 60);
+  }
+
+  notifyRendererShown();
+}
+
+function hideWindow() {
+  clearTimeout(rendererAckTimer);
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
+    mainWindow.hide();
+  }
+}
+
+function toggleWindow() {
+  // A visible but unfocused HUD is usually sitting on another workspace/Space: bring it here instead of hiding
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && mainWindow.isFocused()) {
+    hideWindow();
+  } else {
+    showWindow();
+  }
+}
+
+// Ask the renderer to refresh itself; reload it if it doesn't answer (blank/hung page)
+function notifyRendererShown() {
+  const wc = mainWindow.webContents;
+  clearTimeout(rendererAckTimer);
+  // A page that's still loading renders fresh data on its own
+  if (wc.isLoading()) return;
+
+  rendererAckTimer = setTimeout(() => {
+    if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible()) {
+      console.warn('[HUD] Renderer did not respond, reloading');
+      mainWindow.webContents.reload();
+    }
+  }, RENDERER_ACK_TIMEOUT_MS);
+  wc.send('window-shown');
 }
 
 function setupIPC() {
@@ -374,9 +463,11 @@ function setupIPC() {
   });
 
   ipcMain.handle('hide-window', () => {
-    if (mainWindow && mainWindow.isVisible()) {
-      mainWindow.hide();
-    }
+    hideWindow();
+  });
+
+  ipcMain.on('hud-ready', () => {
+    clearTimeout(rendererAckTimer);
   });
 
   ipcMain.handle('check-permissions', () => {
@@ -409,9 +500,7 @@ function setupIPC() {
     }
 
     // 2. Hide HUD window and surrender active focus back to the target application
-    if (mainWindow && mainWindow.isVisible()) {
-      mainWindow.hide();
-    }
+    hideWindow();
 
     // If macOS Accessibility permissions are not granted, prompt the user
     if (process.platform === 'darwin' && !PasteInjector.checkPermissions(false)) {
@@ -547,6 +636,16 @@ app.whenReady().then(() => {
   hotkeyManager = new HotkeyManager('CommandOrControl+Shift+V');
   hotkeyManager.register(() => {
     toggleWindow();
+  });
+
+  // A hidden HUD can lose its compositor surface across these events and later show up blank
+  powerMonitor.on('resume', () => recreateHiddenWindow('system resume'));
+  screen.on('display-added', () => recreateHiddenWindow('display added'));
+  screen.on('display-removed', () => recreateHiddenWindow('display removed'));
+  app.on('child-process-gone', (_e, details) => {
+    if (details.type === 'GPU') {
+      recreateHiddenWindow('GPU process gone');
+    }
   });
 
   // If user launched manually (not at system boot / not with --hidden), open the About/Details window

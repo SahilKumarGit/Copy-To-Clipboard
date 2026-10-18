@@ -105,11 +105,34 @@ class ClipboardApp {
       });
 
       if (window.clipboardAPI.onWindowShown) {
-        window.clipboardAPI.onWindowShown(() => {
+        window.clipboardAPI.onWindowShown(async () => {
+          this.resetView();
           this.checkAccessibility();
+          try {
+            this.items = await window.clipboardAPI.getItems('all');
+          } catch (err) {
+            console.warn('Failed to refresh clipboard items:', err);
+          }
+          this.dom.itemsList.parentElement.scrollTop = 0;
+          this.render();
+          // Tell the main process we're alive so it doesn't reload a blank HUD
+          if (window.clipboardAPI.hudReady) {
+            window.clipboardAPI.hudReady();
+          }
         });
       }
     }
+  }
+
+  // Start every opening fresh: no leftover search text, "All" tab, first item selected
+  resetView() {
+    this.dom.searchInput.value = '';
+    this.searchEngine.setQuery('');
+    this.searchEngine.setFilter('all');
+    this.dom.filterTabs.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === 'all');
+    });
+    this.keyboardNav.selectedIndex = 0;
   }
 
   async checkAccessibility() {

@@ -19,7 +19,7 @@ node tests/storage.test.js
 # Compile native macOS paste injector
 echo "Compiling native paste helper..."
 mkdir -p bin
-clang -Wall -Wextra -Werror -Wno-deprecated-declarations -framework ApplicationServices -framework Cocoa -framework Carbon native/paste-helper-mac.m -o bin/paste-helper-mac
+clang -arch arm64 -arch x86_64 -Wall -Wextra -Werror -Wno-deprecated-declarations -framework ApplicationServices -framework Cocoa -framework Carbon native/paste-helper-mac.m -o bin/paste-helper-mac
 chmod +x bin/paste-helper-mac
 
 # Build macOS DMG, ZIP, and .app

@@ -16,7 +16,8 @@ contextBridge.exposeInMainWorld('clipboardAPI', {
   },
   onWindowShown: (callback) => {
     ipcRenderer.on('window-shown', () => callback());
-  }
+  },
+  hudReady: () => ipcRenderer.send('hud-ready')
 });
 
 contextBridge.exposeInMainWorld('aboutAPI', {

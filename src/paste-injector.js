@@ -103,19 +103,22 @@ class PasteInjector {
     } else if (isLinux) {
       const isWayland = Boolean(process.env.WAYLAND_DISPLAY);
 
-      if (isWayland) {
-        exec('wtype -M ctrl -k v -m ctrl', (err) => {
-          if (err) {
-            exec('ydotool key 29:1 47:1 47:0 29:0', () => {});
-          }
-        });
-      } else {
-        exec('xdotool key --clearmodifiers ctrl+v', (err) => {
-          if (err) {
-            console.warn('[PasteInjector] xdotool notice:', err.message);
-          }
-        });
-      }
+      // Give the window manager time to hand focus back to the previous window after the HUD hides
+      setTimeout(() => {
+        if (isWayland) {
+          exec('wtype -M ctrl -k v -m ctrl', (err) => {
+            if (err) {
+              exec('ydotool key 29:1 47:1 47:0 29:0', () => {});
+            }
+          });
+        } else {
+          exec('xdotool key --clearmodifiers ctrl+v', (err) => {
+            if (err) {
+              console.warn('[PasteInjector] xdotool notice:', err.message);
+            }
+          });
+        }
+      }, 150);
     }
   }
 
