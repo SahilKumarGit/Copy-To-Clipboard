@@ -31,6 +31,27 @@ function setupFileLogging() {
   } catch (_) {}
 }
 
+// Chromium refuses to take over a lock written under a different hostname (macOS hostnames change with
+// the network), so a crashed/killed instance would block every future launch. Clear it when its PID is gone.
+function clearStaleSingletonLock() {
+  try {
+    const userData = app.getPath('userData');
+    const target = fs.readlinkSync(path.join(userData, 'SingletonLock'));
+    const pid = parseInt(target.slice(target.lastIndexOf('-') + 1), 10);
+    if (!pid) return;
+    try {
+      process.kill(pid, 0);
+      return; // owner still alive
+    } catch (err) {
+      if (err.code !== 'ESRCH') return;
+    }
+    ['SingletonLock', 'SingletonSocket', 'SingletonCookie'].forEach((name) => {
+      try { fs.unlinkSync(path.join(userData, name)); } catch (_) {}
+    });
+  } catch (_) {}
+}
+clearStaleSingletonLock();
+
 // Single-instance lock
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -139,12 +160,15 @@ function setAutoStart(enable) {
       const desktopFile = path.join(autostartDir, 'clipboard-manager.desktop');
       if (enable) {
         if (!fs.existsSync(autostartDir)) fs.mkdirSync(autostartDir, { recursive: true });
+        // Prefer the installer's launcher script (it carries sandbox flags); an AppImage's execPath
+        // is a temporary /tmp/.mount_* path that's gone after reboot
+        const execTarget = process.env.CLIPBOARD_MANAGER_LAUNCHER || process.env.APPIMAGE || process.execPath;
         const content = `[Desktop Entry]
 Type=Application
 Version=1.0
 Name=Clipboard Manager
 Comment=Clipboard Manager Daemon
-Exec="${process.execPath}" --hidden
+Exec="${execTarget}" --hidden
 Terminal=false
 StartupNotify=false
 X-GNOME-Autostart-enabled=true
@@ -619,7 +643,7 @@ function setupIPC() {
           child.unref();
         }
       } else if (process.platform === 'linux') {
-        const script = `sleep 1 && rm -f /usr/local/bin/clipboard-manager ~/.local/share/applications/clipboard-manager.desktop ~/.config/autostart/clipboard-manager.desktop`;
+        const script = `sleep 1 && rm -rf ~/.local/share/clipboard-manager && rm -f ~/.local/bin/clipboard-manager /usr/local/bin/clipboard-manager ~/.local/share/applications/clipboard-manager.desktop ~/.config/autostart/clipboard-manager.desktop`;
         const child = spawn('/bin/bash', ['-c', script], {
           detached: true,
           stdio: 'ignore'
@@ -641,9 +665,28 @@ function setupIPC() {
   });
 }
 
+// macOS app menu without a Quit item: Cmd+Q in the About window only closes it, so the daemon
+// keeps running. The Edit menu keeps copy/paste/select-all working in the HUD search box.
+function setupAppMenu() {
+  if (process.platform !== 'darwin') return;
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    {
+      label: app.name,
+      submenu: [
+        { label: 'About Clipboard Manager', click: () => openAboutWindow() },
+        { type: 'separator' },
+        { label: 'Close Window', accelerator: 'Command+Q', role: 'close' },
+        { role: 'close' }
+      ]
+    },
+    { role: 'editMenu' }
+  ]));
+}
+
 // App lifecycle
 app.whenReady().then(() => {
   setupFileLogging();
+  setupAppMenu();
   console.log(`[App] Starting v${app.getVersion()} on ${process.platform}`);
   cleanLegacyLaunchAgent();
 
@@ -723,18 +766,12 @@ app.on('activate', () => {
   openAboutWindow();
 });
 
-// Intercept window close / Cmd+Q: prevent quitting the background daemon
-app.on('before-quit', (e) => {
-  if (!app.isQuitting) {
-    e.preventDefault();
-    if (aboutWindow && !aboutWindow.isDestroyed()) {
-      aboutWindow.close();
-      aboutWindow = null;
-    }
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.hide();
-    }
-  }
+// Every real quit (tray Quit, installer/updater `killall`, logout, shutdown) must go through: a
+// blocked quit leaves an outdated process running against a replaced app bundle, which then reads
+// garbage out of the new app.asar. Accidental Cmd+Q is handled by the app menu instead (see below).
+app.on('before-quit', () => {
+  // Lets the HUD's close handler stop turning close into hide
+  app.isQuitting = true;
 });
 
 app.on('will-quit', () => {

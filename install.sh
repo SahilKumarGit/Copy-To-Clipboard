@@ -15,6 +15,12 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 GITHUB_REPO="SahilKumarGit/Copy-To-Clipboard"
+# Reinstall even when the installed version is already the latest: `bash -s -- --force` or FORCE=1
+FORCE="${FORCE:-0}"
+if [ "$1" = "--force" ]; then
+  FORCE=1
+  shift
+fi
 REQUESTED_VERSION="${1:-${VERSION:-latest}}"
 
 echo -e "${CYAN}${BOLD}"
@@ -25,6 +31,37 @@ echo -e "${NC}"
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
+
+# Stop every running copy matching the pattern before files are replaced. Versions up to 1.0.7 ignore
+# SIGTERM, and a process left running against a replaced bundle shows corrupted windows, so escalate.
+stop_running_app() {
+  local pattern="$1"
+  pgrep -f "$pattern" >/dev/null 2>&1 || return 0
+  echo -e "${CYAN}→ Stopping the running Clipboard Manager...${NC}"
+  pkill -TERM -f "$pattern" 2>/dev/null || true
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    pgrep -f "$pattern" >/dev/null 2>&1 || return 0
+    sleep 0.3
+  done
+  pkill -KILL -f "$pattern" 2>/dev/null || true
+  sleep 0.5
+  if pgrep -f "$pattern" >/dev/null 2>&1; then
+    echo -e "${RED}❌ Could not stop the running Clipboard Manager. Quit it from the menu bar and run the installer again.${NC}"
+    exit 1
+  fi
+}
+
+# LaunchServices can hand `open` to a copy that is still shutting down, so confirm it started
+launch_mac_app() {
+  for _ in 1 2; do
+    open "/Applications/ClipboardManager.app" --args --hidden
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+      pgrep -f "ClipboardManager.app/Contents/MacOS/ClipboardManager" >/dev/null 2>&1 && return 0
+      sleep 0.5
+    done
+  done
+  echo -e "${YELLOW}⚠️  Clipboard Manager did not start. Open it from /Applications.${NC}"
+}
 
 # ------------------------------------------------------------------------------
 # 1. Fallback: Build from Source
@@ -59,7 +96,7 @@ build_from_source() {
     [ "$ARCH" = "x86_64" ] && APP_OUT="dist/mac/ClipboardManager.app"
     [ ! -d "$APP_OUT" ] && APP_OUT="$(find dist -name 'ClipboardManager.app' -type d | head -n 1)"
 
-    killall ClipboardManager 2>/dev/null || true
+    stop_running_app "ClipboardManager.app/Contents/"
     rm -rf "/Applications/ClipboardManager.app"
     cp -R "$APP_OUT" "/Applications/ClipboardManager.app"
     xattr -cr "/Applications/ClipboardManager.app" 2>/dev/null || true
@@ -70,7 +107,7 @@ build_from_source() {
     launchctl bootout "gui/$(id -u)/com.clipboardmanager.app" 2>/dev/null || launchctl unload -w "$PLIST_PATH" 2>/dev/null || true
     rm -f "$PLIST_PATH" 2>/dev/null || true
 
-    open "/Applications/ClipboardManager.app" --args --hidden
+    launch_mac_app
   fi
   echo -e "${GREEN}✓ Successfully built and installed from source!${NC}"
   exit 0
@@ -112,26 +149,39 @@ fi
 
 # Extract Tag and Download URL
 RELEASE_TAG="$(echo "$RELEASE_DATA" | grep -m 1 '"tag_name":' | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
+RELEASE_VERSION="${RELEASE_TAG#v}"
 echo -e "${GREEN}✓ Found Release: ${BOLD}${RELEASE_TAG}${NC}"
+
+# First release asset whose URL matches the given pattern
+asset_url() {
+  echo "$RELEASE_DATA" | grep -o "https://[^\"]*$1" | head -n 1
+}
+
+MAC_APP="/Applications/ClipboardManager.app"
+LINUX_BIN_DIR="$HOME/.local/bin"
+LINUX_APP_DIR="$HOME/.local/share/clipboard-manager"
 
 DOWNLOAD_URL=""
 if [ "$OS" = "Darwin" ]; then
-  if [ "$ARCH" = "arm64" ]; then
-    # Apple Silicon pattern
-    DOWNLOAD_URL="$(echo "$RELEASE_DATA" | grep -o 'https://[^"]*arm64-mac\.zip' | head -n 1)"
-  else
-    # Intel x86_64 pattern
-    DOWNLOAD_URL="$(echo "$RELEASE_DATA" | grep -o 'https://[^"]*[^4]-mac\.zip' | head -n 1)"
+  MAC_ARCH="arm64"
+  [ "$ARCH" = "x86_64" ] && MAC_ARCH="x64"
+  # .tar.xz is ~40% smaller than .zip; older releases only ship .zip
+  DOWNLOAD_URL="$(asset_url "${MAC_ARCH}-mac\.tar\.xz")"
+  [ -z "$DOWNLOAD_URL" ] && DOWNLOAD_URL="$(asset_url "${MAC_ARCH}-mac\.zip")"
+  if [ -z "$DOWNLOAD_URL" ] && [ "$MAC_ARCH" = "x64" ]; then
+    DOWNLOAD_URL="$(asset_url "[^4]-mac\.zip")"
   fi
-  # Fallback to any mac zip
-  if [ -z "$DOWNLOAD_URL" ]; then
-    DOWNLOAD_URL="$(echo "$RELEASE_DATA" | grep -o 'https://[^"]*-mac\.zip' | head -n 1)"
-  fi
+  [ -z "$DOWNLOAD_URL" ] && DOWNLOAD_URL="$(asset_url "-mac\.zip")"
+
+  INSTALLED_VERSION="$(defaults read "$MAC_APP/Contents/Info.plist" CFBundleShortVersionString 2>/dev/null || true)"
 elif [ "$OS" = "Linux" ]; then
-  DOWNLOAD_URL="$(echo "$RELEASE_DATA" | grep -o 'https://[^"]*\.AppImage' | head -n 1)"
-  if [ -z "$DOWNLOAD_URL" ]; then
-    DOWNLOAD_URL="$(echo "$RELEASE_DATA" | grep -o 'https://[^"]*\.tar\.gz' | head -n 1)"
-  fi
+  LINUX_ARCH="x64"
+  [ "$ARCH" = "aarch64" ] && LINUX_ARCH="arm64"
+  DOWNLOAD_URL="$(asset_url "${LINUX_ARCH}-linux\.tar\.xz")"
+  # Older releases only ship an AppImage
+  [ -z "$DOWNLOAD_URL" ] && DOWNLOAD_URL="$(asset_url "\.AppImage")"
+
+  INSTALLED_VERSION="$(cat "$LINUX_APP_DIR/VERSION" 2>/dev/null || true)"
 fi
 
 if [ -z "$DOWNLOAD_URL" ]; then
@@ -140,7 +190,21 @@ if [ -z "$DOWNLOAD_URL" ]; then
 fi
 
 # ------------------------------------------------------------------------------
-# 3. Download and Install Prebuilt Binary
+# 3. Skip the download when this version is already installed
+# ------------------------------------------------------------------------------
+if [ "$FORCE" != "1" ] && [ -n "$INSTALLED_VERSION" ] && [ "${INSTALLED_VERSION#v}" = "$RELEASE_VERSION" ]; then
+  echo -e "${GREEN}✓ Clipboard Manager ${RELEASE_TAG} is already installed and up to date.${NC}"
+  if [ "$OS" = "Darwin" ]; then
+    pgrep -f "$MAC_APP/Contents/MacOS/ClipboardManager" >/dev/null || launch_mac_app
+  else
+    pgrep -f "$LINUX_APP_DIR/clipboard-manager" >/dev/null || nohup "$LINUX_BIN_DIR/clipboard-manager" --hidden >/dev/null 2>&1 &
+  fi
+  echo -e "  To reinstall anyway: ${CYAN}curl -fsSL https://raw.githubusercontent.com/${GITHUB_REPO}/main/install.sh | bash -s -- --force${NC}"
+  exit 0
+fi
+
+# ------------------------------------------------------------------------------
+# 4. Download and Install Prebuilt Binary
 # ------------------------------------------------------------------------------
 TMP_DIR="$(mktemp -d /tmp/clipboard-install.XXXXXX)"
 cleanup() {
@@ -154,22 +218,27 @@ curl -# -fL "$DOWNLOAD_URL" -o "$TMP_DIR/$FILE_NAME"
 
 if [ "$OS" = "Darwin" ]; then
   echo -e "${CYAN}→ Extracting application bundle...${NC}"
-  unzip -q "$TMP_DIR/$FILE_NAME" -d "$TMP_DIR/extracted"
+  mkdir -p "$TMP_DIR/extracted"
+  if [[ "$FILE_NAME" == *.tar.xz ]]; then
+    tar -xJf "$TMP_DIR/$FILE_NAME" -C "$TMP_DIR/extracted"
+  else
+    unzip -q "$TMP_DIR/$FILE_NAME" -d "$TMP_DIR/extracted"
+  fi
 
-  EXTRACTED_APP="$(find "$TMP_DIR/extracted" -name "ClipboardManager.app" -type d | head -n 1)"
+  EXTRACTED_APP="$(find "$TMP_DIR/extracted" -name "ClipboardManager.app" -type d -prune | head -n 1)"
   if [ -z "$EXTRACTED_APP" ] || [ ! -d "$EXTRACTED_APP" ]; then
     echo -e "${RED}❌ Failed to extract ClipboardManager.app from downloaded release.${NC}"
     exit 1
   fi
 
-  echo -e "${CYAN}→ Installing to /Applications/ClipboardManager.app...${NC}"
-  killall ClipboardManager 2>/dev/null || true
-  sleep 0.5
-  rm -rf "/Applications/ClipboardManager.app"
-  cp -R "$EXTRACTED_APP" "/Applications/ClipboardManager.app"
+  echo -e "${CYAN}→ Installing to ${MAC_APP}...${NC}"
+  stop_running_app "ClipboardManager.app/Contents/"
+  rm -rf "$MAC_APP"
+  # Same volume as /tmp, so a move is instant compared to copying ~220 MB
+  mv "$EXTRACTED_APP" "$MAC_APP" 2>/dev/null || cp -R "$EXTRACTED_APP" "$MAC_APP"
 
   # Strip macOS Gatekeeper quarantine flag
-  xattr -cr "/Applications/ClipboardManager.app" 2>/dev/null || true
+  xattr -cr "$MAC_APP" 2>/dev/null || true
 
   # Clean up any legacy launch agent plist to prevent restart loops
   LAUNCH_AGENT_DIR="$HOME/Library/LaunchAgents"
@@ -177,11 +246,11 @@ if [ "$OS" = "Darwin" ]; then
   launchctl bootout "gui/$(id -u)/com.clipboardmanager.app" 2>/dev/null || launchctl unload -w "$PLIST_PATH" 2>/dev/null || true
   rm -f "$PLIST_PATH" 2>/dev/null || true
 
-  echo -e "${GREEN}✓ Successfully installed to /Applications/ClipboardManager.app${NC}"
+  echo -e "${GREEN}✓ Successfully installed to ${MAC_APP}${NC}"
 
   # Launch application in background daemon mode
   echo -e "${CYAN}→ Launching Clipboard Manager daemon...${NC}"
-  open "/Applications/ClipboardManager.app" --args --hidden
+  launch_mac_app
 
   echo ""
   echo -e "${GREEN}${BOLD}════════════════════════════════════════════════════════════${NC}"
@@ -200,18 +269,58 @@ if [ "$OS" = "Darwin" ]; then
   echo ""
 
 elif [ "$OS" = "Linux" ]; then
-  INSTALL_DIR="$HOME/.local/bin"
-  mkdir -p "$INSTALL_DIR"
+  mkdir -p "$LINUX_BIN_DIR"
 
-  if [[ "$FILE_NAME" == *.AppImage ]]; then
+  # Stop the running copy first: the app is single-instance, so a new launch would just exit
+  stop_running_app "$LINUX_APP_DIR/clipboard-manager"
+  stop_running_app "$LINUX_BIN_DIR/clipboard-manager"
+  stop_running_app "/copy-to-clipboard( |$)"
+
+  EXTRA_FLAGS=""
+  if [[ "$FILE_NAME" == *.tar.xz ]]; then
+    echo -e "${CYAN}→ Extracting application...${NC}"
+    tar -xJf "$TMP_DIR/$FILE_NAME" -C "$TMP_DIR"
+    EXTRACTED_BIN="$(find "$TMP_DIR" -type f -name clipboard-manager -perm -u+x | head -n 1)"
+    if [ -z "$EXTRACTED_BIN" ]; then
+      echo -e "${RED}❌ Failed to find the clipboard-manager executable in the downloaded release.${NC}"
+      exit 1
+    fi
+    rm -rf "$LINUX_APP_DIR"
+    mkdir -p "$(dirname "$LINUX_APP_DIR")"
+    mv "$(dirname "$EXTRACTED_BIN")" "$LINUX_APP_DIR"
+    echo "$RELEASE_VERSION" > "$LINUX_APP_DIR/VERSION"
+    APP_EXEC="$LINUX_APP_DIR/clipboard-manager"
+
+    # Ubuntu 23.10+ blocks the unprivileged user namespaces Chromium's sandbox needs. Use the
+    # setuid sandbox helper instead (one sudo prompt), or fall back to running without the sandbox.
+    USERNS_RESTRICTED=0
+    [ "$(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns 2>/dev/null)" = "1" ] && USERNS_RESTRICTED=1
+    [ "$(cat /proc/sys/kernel/unprivileged_userns_clone 2>/dev/null)" = "0" ] && USERNS_RESTRICTED=1
+    if [ "$USERNS_RESTRICTED" = "1" ] && [ -f "$LINUX_APP_DIR/chrome-sandbox" ]; then
+      echo -e "${CYAN}→ Configuring the Chromium sandbox helper (requires sudo)...${NC}"
+      if ! { sudo chown root:root "$LINUX_APP_DIR/chrome-sandbox" && sudo chmod 4755 "$LINUX_APP_DIR/chrome-sandbox"; } </dev/tty; then
+        echo -e "${YELLOW}⚠️  Could not configure the sandbox helper; running without the Chromium sandbox.${NC}"
+        EXTRA_FLAGS=" --no-sandbox"
+      fi
+    fi
+  else
+    # Legacy AppImage release
     chmod +x "$TMP_DIR/$FILE_NAME"
-    mv "$TMP_DIR/$FILE_NAME" "$INSTALL_DIR/clipboard-manager"
-  elif [[ "$FILE_NAME" == *.tar.gz ]]; then
-    tar -xzf "$TMP_DIR/$FILE_NAME" -C "$TMP_DIR"
-    BIN="$(find "$TMP_DIR" -type f -name "clipboard-manager" | head -n 1)"
-    chmod +x "$BIN"
-    mv "$BIN" "$INSTALL_DIR/clipboard-manager"
+    rm -rf "$LINUX_APP_DIR"
+    mkdir -p "$LINUX_APP_DIR"
+    mv "$TMP_DIR/$FILE_NAME" "$LINUX_APP_DIR/clipboard-manager.AppImage"
+    echo "$RELEASE_VERSION" > "$LINUX_APP_DIR/VERSION"
+    APP_EXEC="$LINUX_APP_DIR/clipboard-manager.AppImage"
   fi
+
+  # Stable launcher: the app writes this path (not its own binary) into its autostart entry
+  rm -f "$LINUX_BIN_DIR/clipboard-manager"
+  cat <<EOF > "$LINUX_BIN_DIR/clipboard-manager"
+#!/usr/bin/env bash
+export CLIPBOARD_MANAGER_LAUNCHER="$LINUX_BIN_DIR/clipboard-manager"
+exec "$APP_EXEC"$EXTRA_FLAGS "\$@"
+EOF
+  chmod +x "$LINUX_BIN_DIR/clipboard-manager"
 
   # Setup autostart
   AUTOSTART_DIR="$HOME/.config/autostart"
@@ -220,14 +329,14 @@ elif [ "$OS" = "Linux" ]; then
 [Desktop Entry]
 Type=Application
 Name=Clipboard Manager
-Exec=$INSTALL_DIR/clipboard-manager --hidden
+Exec="$LINUX_BIN_DIR/clipboard-manager" --hidden
 Terminal=false
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 EOF
 
-  nohup "$INSTALL_DIR/clipboard-manager" >/dev/null 2>&1 &
+  nohup "$LINUX_BIN_DIR/clipboard-manager" >/dev/null 2>&1 &
   echo -e "${GREEN}✓ Successfully installed Clipboard Manager ${RELEASE_TAG}!${NC}"
   echo -e "  ${BOLD}Global Shortcut:${NC} ${CYAN}Ctrl + Shift + V${NC}"
 fi

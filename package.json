@@ -1,6 +1,6 @@
 {
   "name": "copy-to-clipboard",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Cross-platform lightweight clipboard manager for Ubuntu Linux and macOS",
   "main": "src/main.js",
   "scripts": {
@@ -35,19 +35,29 @@
       },
       "target": [
         "dmg",
-        "zip"
-      ]
+        "zip",
+        "tar.xz"
+      ],
+      "artifactName": "${productName}-${version}-${arch}-mac.${ext}"
     },
     "linux": {
       "category": "Utility",
       "icon": "build/icon.png",
       "target": [
+        "tar.xz",
         "AppImage",
-        "tar.gz",
         "deb"
       ],
-      "maintainer": "Sahil Kumar Sahoo <email.sahil@yahoo.com>"
-    }
+      "maintainer": "Sahil Kumar Sahoo <email.sahil@yahoo.com>",
+      "artifactName": "${productName}-${version}-${arch}-linux.${ext}",
+      "executableName": "clipboard-manager"
+    },
+    "electronLanguages": [
+      "en",
+      "en_GB",
+      "en-GB",
+      "en-US"
+    ]
   },
   "devDependencies": {
     "electron": "^41.7.1",
