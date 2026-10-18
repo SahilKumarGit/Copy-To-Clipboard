@@ -43,15 +43,16 @@ jobs:
           chmod +x bin/paste-helper-mac
           lipo -info bin/paste-helper-mac
 
-      - name: Package macOS Application (.dmg and .zip for arm64 & x64)
+      - name: Package macOS Application (.dmg, .zip and .tar.xz for arm64 & x64)
         run: |
-          npx electron-builder --mac dmg zip --arm64 --x64 --publish never
+          npx electron-builder --mac dmg zip tar.xz --arm64 --x64 --publish never
 
       - name: Stage macOS Artifacts
         run: |
           mkdir -p mac-artifacts
           cp dist/*.dmg mac-artifacts/
           cp dist/*-mac.zip mac-artifacts/
+          cp dist/*-mac.tar.xz mac-artifacts/
           ls -lh mac-artifacts/
 
       - name: Upload macOS Artifacts
@@ -62,7 +63,7 @@ jobs:
           if-no-files-found: error
 
   build-linux:
-    name: Build Linux (AppImage, tar.gz, deb)
+    name: Build Linux (tar.xz, AppImage, deb)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -82,13 +83,13 @@ jobs:
 
       - name: Package Linux Application
         run: |
-          npx electron-builder --linux AppImage tar.gz deb --publish never
+          npx electron-builder --linux tar.xz AppImage deb --publish never
 
       - name: Stage Linux Artifacts
         run: |
           mkdir -p linux-artifacts
           cp dist/*.AppImage linux-artifacts/
-          cp dist/*.tar.gz linux-artifacts/
+          cp dist/*.tar.xz linux-artifacts/
           cp dist/*.deb linux-artifacts/
           ls -lh linux-artifacts/
 
