@@ -16,9 +16,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build-mac:
-    name: Build macOS (Apple Silicon & Intel)
-    runs-on: macos-latest
+  # Runs on every push. Packaging only happens when package.json has a version without a release tag,
+  # so ordinary pushes finish in about a minute instead of rebuilding every installer.
+  check:
+    name: Test & Check Version
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      release: ${{ steps.guard.outputs.release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,6 +40,46 @@ jobs:
       - name: Run test suite
         run: npm test
 
+      - name: Read Version from package.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      # Publishing over an existing tag would overwrite that release's assets while the tag still
+      # points at an older commit, so only build and release new versions.
+      - name: Skip packaging if release tag already exists
+        id: guard
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null; then
+            echo "Tag ${{ steps.version.outputs.tag }} already exists - bump the version in package.json to publish a release."
+            echo "release=false" >> $GITHUB_OUTPUT
+          else
+            echo "release=true" >> $GITHUB_OUTPUT
+          fi
+
+  # One job per architecture so the slow .tar.xz/.dmg compression runs in parallel
+  build-mac:
+    name: Build macOS (${{ matrix.arch }})
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [arm64, x64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       # Universal binary: the runner is Apple Silicon, but the x64 build ships the same helper to Intel Macs
       - name: Compile native macOS paste helper
         run: |
@@ -43,27 +88,28 @@ jobs:
           chmod +x bin/paste-helper-mac
           lipo -info bin/paste-helper-mac
 
-      - name: Package macOS Application (.dmg, .zip and .tar.xz for arm64 & x64)
+      - name: Package macOS Application (.dmg and .tar.xz)
         run: |
-          npx electron-builder --mac dmg zip tar.xz --arm64 --x64 --publish never
+          npx electron-builder --mac dmg tar.xz --${{ matrix.arch }} --publish never
 
       - name: Stage macOS Artifacts
         run: |
           mkdir -p mac-artifacts
           cp dist/*.dmg mac-artifacts/
-          cp dist/*-mac.zip mac-artifacts/
           cp dist/*-mac.tar.xz mac-artifacts/
           ls -lh mac-artifacts/
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mac-artifacts
+          name: mac-artifacts-${{ matrix.arch }}
           path: mac-artifacts/*
           if-no-files-found: error
 
   build-linux:
-    name: Build Linux (tar.xz, AppImage, deb)
+    name: Build Linux (tar.xz, deb)
+    needs: check
+    if: needs.check.outputs.release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -78,17 +124,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run test suite
-        run: npm test
-
       - name: Package Linux Application
         run: |
-          npx electron-builder --linux tar.xz AppImage deb --publish never
+          npx electron-builder --linux tar.xz deb --publish never
 
       - name: Stage Linux Artifacts
         run: |
           mkdir -p linux-artifacts
-          cp dist/*.AppImage linux-artifacts/
           cp dist/*.tar.xz linux-artifacts/
           cp dist/*.deb linux-artifacts/
           ls -lh linux-artifacts/
@@ -102,56 +144,28 @@ jobs:
 
   release:
     name: Publish Release Version
-    needs: [build-mac, build-linux]
+    needs: [check, build-mac, build-linux]
+    if: needs.check.outputs.release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Read Version from package.json
-        id: version
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
-      # Only publish when package.json has a new version; otherwise the push would overwrite the
-      # assets of an existing release whose tag still points at an older commit.
-      - name: Skip if release tag already exists
-        id: guard
-        run: |
-          if git ls-remote --exit-code --tags origin "refs/tags/${{ steps.version.outputs.tag }}" >/dev/null; then
-            echo "Tag ${{ steps.version.outputs.tag }} already exists - bump the version in package.json to publish a release."
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Download all compiled artifacts
-        if: steps.guard.outputs.exists == 'false'
         uses: actions/download-artifact@v4
         with:
           path: release-assets
           merge-multiple: true
 
       - name: Generate Checksums
-        if: steps.guard.outputs.exists == 'false'
         run: |
           cd release-assets
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Create GitHub Release
-        if: steps.guard.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.tag }}
-          name: "Clipboard Manager ${{ steps.version.outputs.tag }}"
+          tag_name: ${{ needs.check.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: "Clipboard Manager ${{ needs.check.outputs.tag }}"
           files: release-assets/*
           draft: false
           prerelease: false
