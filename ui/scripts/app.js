@@ -141,6 +141,11 @@ class ClipboardApp {
       const banner = document.getElementById('permission-banner');
       if (banner) {
         banner.style.display = isGranted ? 'none' : 'flex';
+        // On Linux the missing piece is a key injector, not a permission the app can request
+        if (!isGranted && navigator.userAgent.includes('Linux')) {
+          banner.querySelector('.banner-content span').textContent = 'Install xdotool for auto-paste: sudo apt install xdotool';
+          banner.querySelector('.banner-actions').style.display = 'none';
+        }
       }
     }
   }

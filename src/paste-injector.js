@@ -50,6 +50,8 @@ class PasteInjector {
       } catch (err) {
         console.warn('[PasteInjector] Error checking accessibility:', err);
       }
+    } else if (process.platform === 'linux') {
+      return this.hasLinuxPasteTool();
     }
     return true;
   }
@@ -101,25 +103,42 @@ class PasteInjector {
         this._simulatePasteAppleScript(targetPid);
       }
     } else if (isLinux) {
-      const isWayland = Boolean(process.env.WAYLAND_DISPLAY);
-
       // Give the window manager time to hand focus back to the previous window after the HUD hides
-      setTimeout(() => {
-        if (isWayland) {
-          exec('wtype -M ctrl -k v -m ctrl', (err) => {
-            if (err) {
-              exec('ydotool key 29:1 47:1 47:0 29:0', () => {});
-            }
-          });
-        } else {
-          exec('xdotool key --clearmodifiers ctrl+v', (err) => {
-            if (err) {
-              console.warn('[PasteInjector] xdotool notice:', err.message);
-            }
-          });
-        }
-      }, 150);
+      setTimeout(() => this._runFirstWorking(this._linuxPasteCommands()), 150);
     }
+  }
+
+  static _linuxPasteCommands() {
+    const xdotool = 'xdotool key --clearmodifiers ctrl+v';
+    if (!process.env.WAYLAND_DISPLAY) return [xdotool];
+    // wtype: wlroots/KDE compositors (not GNOME); ydotool: any compositor via uinput, if set up;
+    // xdotool: still reaches XWayland windows, which covers many apps on GNOME Wayland
+    return ['wtype -M ctrl -k v -m ctrl', 'ydotool key 29:1 47:1 47:0 29:0', xdotool];
+  }
+
+  static _runFirstWorking(commands, index = 0) {
+    exec(commands[index], (err) => {
+      if (!err) return;
+      if (index + 1 < commands.length) {
+        this._runFirstWorking(commands, index + 1);
+      } else {
+        console.warn('[PasteInjector] No paste tool succeeded (install xdotool):', err.message);
+      }
+    });
+  }
+
+  /**
+   * Linux auto-paste needs an external key injector; Ubuntu ships none of them by default
+   */
+  static hasLinuxPasteTool() {
+    if (this._linuxPasteToolFound) return true;
+    try {
+      execFileSync('/bin/sh', ['-c', 'command -v xdotool || command -v ydotool || command -v wtype'], { timeout: 1000 });
+      this._linuxPasteToolFound = true;
+    } catch (_) {
+      this._linuxPasteToolFound = false;
+    }
+    return this._linuxPasteToolFound;
   }
 
   static _simulatePasteAppleScript(_targetPid) {

@@ -313,6 +313,23 @@ elif [ "$OS" = "Linux" ]; then
     APP_EXEC="$LINUX_APP_DIR/clipboard-manager.AppImage"
   fi
 
+  # Auto-paste sends Ctrl+V through xdotool, which Ubuntu doesn't ship. Without it the selected item
+  # only lands on the clipboard and nothing gets pasted.
+  if ! command -v xdotool >/dev/null 2>&1; then
+    if command -v apt-get >/dev/null 2>&1; then
+      echo -e "${CYAN}→ Installing xdotool for auto-paste (requires sudo)...${NC}"
+      if ! { sudo apt-get install -y xdotool >/dev/null; } </dev/tty; then
+        echo -e "${YELLOW}⚠️  Could not install xdotool. Auto-paste needs it: sudo apt install xdotool${NC}"
+      fi
+    else
+      echo -e "${YELLOW}⚠️  Auto-paste needs xdotool. Install it with your package manager.${NC}"
+    fi
+  fi
+  if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+    echo -e "${YELLOW}ℹ Wayland session: auto-paste works in X11/XWayland apps. For native Wayland apps,${NC}"
+    echo -e "${YELLOW}  log in with \"Ubuntu on Xorg\" or paste manually with Ctrl+V after picking an item.${NC}"
+  fi
+
   # Stable launcher: the app writes this path (not its own binary) into its autostart entry
   rm -f "$LINUX_BIN_DIR/clipboard-manager"
   cat <<EOF > "$LINUX_BIN_DIR/clipboard-manager"
