@@ -54,6 +54,7 @@
     "deb": {
       "depends": [
         "xdotool",
+        "wl-clipboard",
         "libnotify4",
         "libxtst6"
       ]

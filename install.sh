@@ -324,6 +324,11 @@ elif [ "$OS" = "Linux" ]; then
     else
       echo -e "${YELLOW}⚠️  Auto-paste needs xdotool. Install it with your package manager.${NC}"
     fi
+  if ! command -v wl-paste >/dev/null 2>&1 && [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+    if command -v apt-get >/dev/null 2>&1; then
+      echo -e "${CYAN}→ Installing wl-clipboard for Wayland clipboard capture (requires sudo)...${NC}"
+      sudo apt-get install -y wl-clipboard >/dev/null 2>&1 || true
+    fi
   fi
   if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
     echo -e "${YELLOW}ℹ Wayland session: auto-paste works in X11/XWayland apps. For native Wayland apps,${NC}"

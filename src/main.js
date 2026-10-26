@@ -483,6 +483,10 @@ function showWindow() {
     }, 60);
   }
 
+  if (listener) {
+    listener.checkNow();
+  }
+
   notifyRendererShown();
 }
 
@@ -520,6 +524,9 @@ function notifyRendererShown() {
 
 function setupIPC() {
   ipcMain.handle('get-items', (_e, filter) => {
+    if (listener) {
+      listener.checkNow();
+    }
     return storage.getItems(filter);
   });
 
