@@ -339,7 +339,7 @@ exec "$APP_EXEC"$EXTRA_FLAGS "\$@"
 EOF
   chmod +x "$LINUX_BIN_DIR/clipboard-manager"
 
-  # Setup autostart
+  # Setup autostart and application desktop entries
   AUTOSTART_DIR="$HOME/.config/autostart"
   mkdir -p "$AUTOSTART_DIR"
   cat <<EOF > "$AUTOSTART_DIR/clipboard-manager.desktop"
@@ -352,6 +352,37 @@ Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
 EOF
+
+  APP_DESKTOP_DIR="$HOME/.local/share/applications"
+  mkdir -p "$APP_DESKTOP_DIR"
+  cat <<EOF > "$APP_DESKTOP_DIR/clipboard-manager.desktop"
+[Desktop Entry]
+Type=Application
+Name=Clipboard Manager
+Comment=Lightweight Clipboard Manager
+Exec="$LINUX_BIN_DIR/clipboard-manager" %U
+Terminal=false
+Categories=Utility;
+StartupWMClass=ClipboardManager
+EOF
+
+  # Configure GNOME global shortcut for Wayland & X11
+  if command -v gsettings >/dev/null 2>&1; then
+    SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
+    PATH_PREFIX="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
+    SLOT="clipboard-manager"
+    NEW_PATH="$PATH_PREFIX/$SLOT/"
+    CURRENT_LIST=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings 2>/dev/null || echo "@as []")
+    if [[ "$CURRENT_LIST" == "@as []" || "$CURRENT_LIST" == "[]" ]]; then
+      gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['$NEW_PATH']" 2>/dev/null || true
+    elif [[ "$CURRENT_LIST" != *"$NEW_PATH"* ]]; then
+      CLEANED=$(echo "$CURRENT_LIST" | tr -d '[]' | tr "'" '"')
+      gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "[${CLEANED}, '$NEW_PATH']" 2>/dev/null || true
+    fi
+    gsettings set "$SCHEMA:$NEW_PATH" name "Clipboard Manager" 2>/dev/null || true
+    gsettings set "$SCHEMA:$NEW_PATH" command "$LINUX_BIN_DIR/clipboard-manager --toggle" 2>/dev/null || true
+    gsettings set "$SCHEMA:$NEW_PATH" binding "<Control><Shift>v" 2>/dev/null || true
+  fi
 
   nohup "$LINUX_BIN_DIR/clipboard-manager" >/dev/null 2>&1 &
   echo -e "${GREEN}✓ Successfully installed Clipboard Manager ${RELEASE_TAG}!${NC}"

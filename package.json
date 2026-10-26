@@ -48,8 +48,19 @@
       ],
       "maintainer": "Sahil Kumar Sahoo <email.sahil@yahoo.com>",
       "artifactName": "${productName}-${version}-${arch}-linux.${ext}",
-      "executableName": "clipboard-manager"
+      "executableName": "clipboard-manager",
+      "desktop": {
+        "StartupWMClass": "ClipboardManager"
+      }
     },
+    "deb": {
+      "depends": [
+        "xdotool",
+        "libnotify4",
+        "libxtst6"
+      ]
+    },
+    "desktopName": "clipboard-manager.desktop",
     "electronLanguages": [
       "en",
       "en_GB",

@@ -35,6 +35,16 @@ class PasteInjector {
     return null;
   }
 
+  static getLinuxActiveWindow() {
+    if (process.platform !== 'linux') return null;
+    try {
+      const out = execFileSync('/bin/sh', ['-c', 'command -v xdotool >/dev/null 2>&1 && xdotool getactivewindow'], { timeout: 300 }).toString().trim();
+      const wid = parseInt(out, 10);
+      if (!isNaN(wid) && wid > 0) return wid;
+    } catch (_) {}
+    return null;
+  }
+
   static checkPermissions(prompt = false) {
     if (process.platform === 'darwin') {
       try {
@@ -84,7 +94,7 @@ class PasteInjector {
     return true;
   }
 
-  static simulatePaste(targetPid = null) {
+  static simulatePaste(targetPid = null, targetWindowId = null) {
     const isMac = process.platform === 'darwin';
     const isLinux = process.platform === 'linux';
 
@@ -103,17 +113,37 @@ class PasteInjector {
         this._simulatePasteAppleScript(targetPid);
       }
     } else if (isLinux) {
-      // Give the window manager time to hand focus back to the previous window after the HUD hides
-      setTimeout(() => this._runFirstWorking(this._linuxPasteCommands()), 150);
+      setTimeout(() => this._simulateLinuxPaste(targetWindowId), 150);
     }
   }
 
-  static _linuxPasteCommands() {
-    const xdotool = 'xdotool key --clearmodifiers ctrl+v';
-    if (!process.env.WAYLAND_DISPLAY) return [xdotool];
-    // wtype: wlroots/KDE compositors (not GNOME); ydotool: any compositor via uinput, if set up;
-    // xdotool: still reaches XWayland windows, which covers many apps on GNOME Wayland
-    return ['wtype -M ctrl -k v -m ctrl', 'ydotool key 29:1 47:1 47:0 29:0', xdotool];
+  static _simulateLinuxPaste(targetWindowId = null) {
+    let isTerminal = false;
+    if (targetWindowId) {
+      try {
+        const cls = execFileSync('/bin/sh', ['-c', `xdotool getwindowclassname ${targetWindowId} 2>/dev/null || xdotool getwindowname ${targetWindowId} 2>/dev/null`], { timeout: 300 }).toString().toLowerCase();
+        if (/terminal|konsole|kitty|alacritty|xterm|urxvt|tilix|terminator/.test(cls)) {
+          isTerminal = true;
+        }
+      } catch (_) {}
+    }
+
+    const pasteKey = isTerminal ? 'ctrl+shift+v' : 'ctrl+v';
+    const xdotoolCmd = targetWindowId
+      ? `xdotool windowactivate --sync ${targetWindowId} key --clearmodifiers ${pasteKey}`
+      : `xdotool key --clearmodifiers ${pasteKey}`;
+
+    const commands = [];
+    if (process.env.WAYLAND_DISPLAY) {
+      // Wayland: ydotool reaches kernel uinput; wtype reaches wlroots/KDE; xdotool reaches XWayland windows
+      commands.push(isTerminal ? 'ydotool key 29:1 42:1 47:1 47:0 42:0 29:0' : 'ydotool key 29:1 47:1 47:0 29:0');
+      commands.push(isTerminal ? 'wtype -M ctrl -M shift -k v -m shift -m ctrl' : 'wtype -M ctrl -k v -m ctrl');
+      commands.push(xdotoolCmd);
+    } else {
+      commands.push(xdotoolCmd);
+    }
+
+    this._runFirstWorking(commands);
   }
 
   static _runFirstWorking(commands, index = 0) {
@@ -131,9 +161,9 @@ class PasteInjector {
    * Linux auto-paste needs an external key injector; Ubuntu ships none of them by default
    */
   static hasLinuxPasteTool() {
-    if (this._linuxPasteToolFound) return true;
+    if (this._linuxPasteToolFound !== undefined) return this._linuxPasteToolFound;
     try {
-      execFileSync('/bin/sh', ['-c', 'command -v xdotool || command -v ydotool || command -v wtype'], { timeout: 1000 });
+      execFileSync('/bin/sh', ['-c', 'command -v xdotool || command -v ydotool || command -v wtype'], { timeout: 600 });
       this._linuxPasteToolFound = true;
     } catch (_) {
       this._linuxPasteToolFound = false;

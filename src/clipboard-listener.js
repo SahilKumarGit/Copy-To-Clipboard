@@ -90,7 +90,12 @@ class ClipboardListener {
    */
   writeTextSilently(text) {
     this.lastText = text;
-    clipboard.writeText(text);
+    clipboard.writeText(text, 'clipboard');
+    if (process.platform === 'linux') {
+      try {
+        clipboard.writeText(text, 'selection');
+      } catch (_) {}
+    }
   }
 
   /**

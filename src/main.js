@@ -1,4 +1,7 @@
 const { app, BrowserWindow, ipcMain, screen, nativeImage, Tray, Menu, shell, powerMonitor } = require('electron');
+if (process.platform === 'linux') {
+  app.setDesktopName('clipboard-manager.desktop');
+}
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -79,6 +82,7 @@ let hotkeyManager = null;
 let syncProvider = null;
 let tray = null;
 let previousAppPid = null;
+let previousWindowId = null;
 let lastShownAt = 0;
 let rendererAckTimer = null;
 let rendererCrashTimes = [];
@@ -88,7 +92,7 @@ const WIN_WIDTH = 340;
 const WIN_HEIGHT = 430;
 
 // Ignore blur events fired while the window manager is still handing focus to the HUD
-const BLUR_GRACE_MS = 250;
+const BLUR_GRACE_MS = process.platform === 'linux' ? 500 : 250;
 // Reload the HUD if its renderer doesn't answer a 'window-shown' ping within this time
 const RENDERER_ACK_TIMEOUT_MS = 1500;
 // Auto-reload a crashed renderer at most this many times per window of time
@@ -444,10 +448,14 @@ function showWindow() {
     createWindow();
   }
 
-  // Capture frontmost app PID synchronously BEFORE showing the HUD
-  const activePid = PasteInjector.getActivePid();
-  if (activePid && activePid !== process.pid) {
-    previousAppPid = activePid;
+  // Capture frontmost app PID or window ID synchronously BEFORE showing the HUD
+  if (process.platform === 'darwin') {
+    const activePid = PasteInjector.getActivePid();
+    if (activePid && activePid !== process.pid) {
+      previousAppPid = activePid;
+    }
+  } else if (process.platform === 'linux') {
+    previousWindowId = PasteInjector.getLinuxActiveWindow();
   }
 
   applyWorkspaceBehavior();
@@ -577,8 +585,8 @@ function setupIPC() {
       return true;
     }
 
-    // 3. Inject synthetic paste keystroke targeting the original process PID
-    PasteInjector.simulatePaste(previousAppPid);
+    // 3. Inject synthetic paste keystroke targeting the original process PID or window ID
+    PasteInjector.simulatePaste(previousAppPid, previousWindowId);
 
     return true;
   });
@@ -683,10 +691,37 @@ function setupAppMenu() {
   ]));
 }
 
+function setupLinuxGnomeShortcut() {
+  if (process.platform !== 'linux') return;
+  const script = `
+    if command -v gsettings >/dev/null 2>&1; then
+      SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
+      PATH_PREFIX="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
+      SLOT="clipboard-manager"
+      NEW_PATH="$PATH_PREFIX/$SLOT/"
+      CURRENT_LIST=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings 2>/dev/null || echo "@as []")
+      if [[ "$CURRENT_LIST" == "@as []" || "$CURRENT_LIST" == "[]" ]]; then
+        gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['$NEW_PATH']" 2>/dev/null || true
+      elif [[ "$CURRENT_LIST" != *"$NEW_PATH"* ]]; then
+        CLEANED=$(echo "$CURRENT_LIST" | tr -d '[]' | tr "'" '"')
+        gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "[${CLEANED}, '$NEW_PATH']" 2>/dev/null || true
+      fi
+      BIN="$(command -v clipboard-manager || echo "$HOME/.local/bin/clipboard-manager")"
+      gsettings set "$SCHEMA:$NEW_PATH" name "Clipboard Manager" 2>/dev/null || true
+      gsettings set "$SCHEMA:$NEW_PATH" command "$BIN --toggle" 2>/dev/null || true
+      gsettings set "$SCHEMA:$NEW_PATH" binding "<Control><Shift>v" 2>/dev/null || true
+    fi
+  `;
+  try {
+    spawn('/bin/bash', ['-c', script], { stdio: 'ignore', detached: true }).unref();
+  } catch (_) {}
+}
+
 // App lifecycle
 app.whenReady().then(() => {
   setupFileLogging();
   setupAppMenu();
+  setupLinuxGnomeShortcut();
   console.log(`[App] Starting v${app.getVersion()} on ${process.platform}`);
   cleanLegacyLaunchAgent();
 
@@ -728,16 +763,9 @@ app.whenReady().then(() => {
     toggleWindow();
   });
 
-  // The OS can silently drop the hotkey grab across sleep, screen lock or keyboard/layout changes
-  // (notably X11 on Ubuntu), so re-register it then and verify it periodically.
+  // Periodically verify the global shortcut is still active without unregistering it
   setInterval(() => {
-    // On X11 isRegistered() only reflects Electron's own bookkeeping, not whether the X server still
-    // honours the key grab, so re-grab outright there (cheap) while the HUD isn't in use.
-    if (process.platform === 'linux' && !(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible())) {
-      hotkeyManager.refresh();
-    } else {
-      hotkeyManager.ensureRegistered();
-    }
+    hotkeyManager.ensureRegistered();
   }, HOTKEY_CHECK_INTERVAL_MS);
   powerMonitor.on('unlock-screen', () => hotkeyManager.refresh());
 
@@ -755,8 +783,11 @@ app.whenReady().then(() => {
   });
 
   // If user launched manually (not at system boot / not with --hidden), open the About/Details window
+  const isToggleLaunch = process.argv.includes('--toggle');
   const isHiddenLaunch = process.argv.includes('--hidden') || app.getLoginItemSettings().wasOpenedAtLogin;
-  if (!isHiddenLaunch) {
+  if (isToggleLaunch) {
+    toggleWindow();
+  } else if (!isHiddenLaunch) {
     openAboutWindow();
   }
 });
