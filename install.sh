@@ -326,17 +326,6 @@ elif [ "$OS" = "Linux" ]; then
     fi
   fi
 
-  if ! command -v wl-paste >/dev/null 2>&1 && [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
-    if command -v apt-get >/dev/null 2>&1; then
-      echo -e "${CYAN}→ Installing wl-clipboard for Wayland clipboard capture (requires sudo)...${NC}"
-      sudo apt-get install -y wl-clipboard >/dev/null 2>&1 || true
-    fi
-  fi
-  if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
-    echo -e "${YELLOW}ℹ Wayland session: auto-paste works in X11/XWayland apps. For native Wayland apps,${NC}"
-    echo -e "${YELLOW}  log in with \"Ubuntu on Xorg\" or paste manually with Ctrl+V after picking an item.${NC}"
-  fi
-
   # Stable launcher: the app writes this path (not its own binary) into its autostart entry
   rm -f "$LINUX_BIN_DIR/clipboard-manager"
   cat <<EOF > "$LINUX_BIN_DIR/clipboard-manager"
@@ -372,24 +361,6 @@ Terminal=false
 Categories=Utility;
 StartupWMClass=ClipboardManager
 EOF
-
-  # Configure GNOME global shortcut for Wayland & X11
-  if command -v gsettings >/dev/null 2>&1; then
-    SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
-    PATH_PREFIX="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings"
-    SLOT="clipboard-manager"
-    NEW_PATH="$PATH_PREFIX/$SLOT/"
-    CURRENT_LIST=$(gsettings get org.gnome.settings-daemon.plugins.media-keys custom-keybindings 2>/dev/null || echo "@as []")
-    if [[ "$CURRENT_LIST" == "@as []" || "$CURRENT_LIST" == "[]" ]]; then
-      gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "['$NEW_PATH']" 2>/dev/null || true
-    elif [[ "$CURRENT_LIST" != *"$NEW_PATH"* ]]; then
-      CLEANED=$(echo "$CURRENT_LIST" | tr -d '[]' | tr "'" '"')
-      gsettings set org.gnome.settings-daemon.plugins.media-keys custom-keybindings "[${CLEANED}, '$NEW_PATH']" 2>/dev/null || true
-    fi
-    gsettings set "$SCHEMA:$NEW_PATH" name "Clipboard Manager" 2>/dev/null || true
-    gsettings set "$SCHEMA:$NEW_PATH" command "$LINUX_BIN_DIR/clipboard-manager --toggle" 2>/dev/null || true
-    gsettings set "$SCHEMA:$NEW_PATH" binding "<Control><Shift>v" 2>/dev/null || true
-  fi
 
   nohup "$LINUX_BIN_DIR/clipboard-manager" >/dev/null 2>&1 &
   echo -e "${GREEN}✓ Successfully installed Clipboard Manager ${RELEASE_TAG}!${NC}"

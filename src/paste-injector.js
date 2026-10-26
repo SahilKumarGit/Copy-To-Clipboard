@@ -133,26 +133,13 @@ class PasteInjector {
       ? `xdotool windowactivate --sync ${targetWindowId} key --clearmodifiers ${pasteKey}`
       : `xdotool key --clearmodifiers ${pasteKey}`;
 
-    const commands = [];
-    if (process.env.WAYLAND_DISPLAY) {
-      // Wayland: ydotool reaches kernel uinput; wtype reaches wlroots/KDE; xdotool reaches XWayland windows
-      commands.push(isTerminal ? 'ydotool key 29:1 42:1 47:1 47:0 42:0 29:0' : 'ydotool key 29:1 47:1 47:0 29:0');
-      commands.push(isTerminal ? 'wtype -M ctrl -M shift -k v -m shift -m ctrl' : 'wtype -M ctrl -k v -m ctrl');
-      commands.push(xdotoolCmd);
-    } else {
-      commands.push(xdotoolCmd);
-    }
-
-    this._runFirstWorking(commands);
-  }
-
-  static _runFirstWorking(commands, index = 0) {
-    exec(commands[index], (err) => {
-      if (!err) return;
-      if (index + 1 < commands.length) {
-        this._runFirstWorking(commands, index + 1);
-      } else {
-        console.warn('[PasteInjector] No paste tool succeeded (install xdotool):', err.message);
+    exec(xdotoolCmd, (err) => {
+      if (err) {
+        // Fallback for native Wayland if xdotool is not available
+        const waylandCmd = isTerminal
+          ? 'wtype -M ctrl -M shift -k v -m shift -m ctrl 2>/dev/null || ydotool key 29:1 42:1 47:1 47:0 42:0 29:0 2>/dev/null'
+          : 'wtype -M ctrl -k v -m ctrl 2>/dev/null || ydotool key 29:1 47:1 47:0 29:0 2>/dev/null';
+        exec(waylandCmd, () => {});
       }
     });
   }

@@ -1,7 +1,6 @@
 {
   "name": "copy-to-clipboard",
-  "version": "1.0.12",
-  "desktopName": "clipboard-manager.desktop",
+  "version": "1.0.13",
   "description": "Cross-platform lightweight clipboard manager for Ubuntu Linux and macOS",
   "main": "src/main.js",
   "scripts": {
@@ -53,10 +52,7 @@
     },
     "deb": {
       "depends": [
-        "xdotool",
-        "wl-clipboard",
-        "libnotify4",
-        "libxtst6"
+        "xdotool"
       ]
     },
     "electronLanguages": [
