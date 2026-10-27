@@ -5,7 +5,9 @@
   "main": "src/main.js",
   "scripts": {
     "start": "electron src/main.js",
-    "test": "node tests/storage.test.js && node tests/hotkey.test.js && node tests/cli-config.test.js",
+    "test": "node tests/storage.test.js && node tests/hotkey.test.js && node tests/cli-config.test.js && electron tests/ui-features.test.js",
+    "test:unit": "node tests/storage.test.js && node tests/hotkey.test.js && node tests/cli-config.test.js",
+    "test:ui": "electron tests/ui-features.test.js",
     "build:mac": "bash scripts/build-mac.sh",
     "build:ubuntu": "bash scripts/build-ubuntu.sh"
   },

@@ -71,3 +71,14 @@ Whenever **ANY** modification is made to the codebase (features, bug fixes, refa
 - Rebuild and update local `/Applications/ClipboardManager.app` (`npx electron-builder --mac --dir`).
 - Never leave hardcoded test shortcuts in `~/Library/Application Support/clipboard-history/settings.json`.
 
+### 5.3 Automated UI & Feature Verification
+- Execute `npm run test:ui` (or `npm test`):
+  - **HUD Rendering**: Verifies all critical cards, metadata badges, and DOM nodes.
+  - **Live Search**: Validates real-time filtering without lag.
+  - **Filter Tabs**: Verifies category switching (`all`, `pinned`, `text`, `image`, `url`).
+  - **Keyboard Navigation**: Validates arrow key navigation, auto-paste on Enter, and Esc priority closing the hotkey panel first.
+  - **Inline Hotkey Panel**: Tests toggle mechanism, preset chips, key recording mode, and default reset.
+  - **Preferences Window**: Validates version display, autostart toggle, custom preset modal, and uninstaller confirmation dialog.
+
+
+
