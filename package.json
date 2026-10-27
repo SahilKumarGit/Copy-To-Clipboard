@@ -1,11 +1,11 @@
 {
   "name": "copy-to-clipboard",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "Cross-platform lightweight clipboard manager for Ubuntu Linux and macOS",
   "main": "src/main.js",
   "scripts": {
     "start": "electron src/main.js",
-    "test": "node tests/storage.test.js",
+    "test": "node tests/storage.test.js && node tests/hotkey.test.js && node tests/cli-config.test.js",
     "build:mac": "bash scripts/build-mac.sh",
     "build:ubuntu": "bash scripts/build-ubuntu.sh"
   },

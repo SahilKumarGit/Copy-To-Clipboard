@@ -106,8 +106,8 @@ function openAboutWindow() {
   }
 
   aboutWindow = new BrowserWindow({
-    width: 360,
-    height: 490,
+    width: 380,
+    height: 540,
     frame: false,
     transparent: true,
     resizable: false,
@@ -214,6 +214,66 @@ function isAutoStartEnabled() {
   return true;
 }
 
+function updateTrayMenu() {
+  if (!tray) return;
+  const currentShortcut = hotkeyManager ? hotkeyManager.getShortcut() : (storage ? storage.getShortcut() : 'Control+Shift+V');
+  const shortcutHint = HotkeyManager.toDisplayString(currentShortcut);
+  tray.setToolTip(`Clipboard Manager (${shortcutHint})`);
+
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: `Open Clipboard (${shortcutHint})`,
+      click: () => toggleWindow()
+    },
+    { type: 'separator' },
+    {
+      label: 'Pause Recording',
+      type: 'checkbox',
+      checked: listener ? listener.isPaused() : false,
+      click: (menuItem) => {
+        if (!listener) return;
+        if (menuItem.checked) {
+          listener.pause();
+        } else {
+          listener.resume();
+        }
+      }
+    },
+    {
+      label: 'Clear Unpinned History',
+      click: () => {
+        if (storage) storage.clearUnpinned();
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('clipboard-cleared');
+        }
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Check Accessibility Permission',
+      click: () => {
+        PasteInjector.checkPermissions(true);
+      }
+    },
+    { type: 'separator' },
+    {
+      label: 'Preferences / About...',
+      click: () => openAboutWindow()
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit',
+      click: () => {
+        app.isQuitting = true;
+        cleanLegacyLaunchAgent();
+        app.quit();
+      }
+    }
+  ]);
+
+  tray.setContextMenu(contextMenu);
+}
+
 function createTray() {
   const iconSvg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -229,60 +289,7 @@ function createTray() {
   }
   
   tray = new Tray(icon);
-  tray.setToolTip('Clipboard Manager (Ctrl+Shift+V / Cmd+Shift+V)');
-
-  const shortcutHint = process.platform === 'darwin' ? 'Cmd+Shift+V' : 'Ctrl+Shift+V';
-  const contextMenu = Menu.buildFromTemplate([
-    {
-      label: `Open Clipboard (${shortcutHint})`,
-      click: () => toggleWindow()
-    },
-    { type: 'separator' },
-    {
-      label: 'Pause Recording',
-      type: 'checkbox',
-      checked: false,
-      click: (menuItem) => {
-        if (menuItem.checked) {
-          listener.pause();
-        } else {
-          listener.resume();
-        }
-      }
-    },
-    {
-      label: 'Clear Unpinned History',
-      click: () => {
-        storage.clearUnpinned();
-        if (mainWindow && !mainWindow.isDestroyed()) {
-          mainWindow.webContents.send('clipboard-cleared');
-        }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'Check Accessibility Permission',
-      click: () => {
-        PasteInjector.checkPermissions(true);
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'About Clipboard Manager...',
-      click: () => openAboutWindow()
-    },
-    { type: 'separator' },
-    {
-      label: 'Quit',
-      click: () => {
-        app.isQuitting = true;
-        cleanLegacyLaunchAgent();
-        app.quit();
-      }
-    }
-  ]);
-
-  tray.setContextMenu(contextMenu);
+  updateTrayMenu();
   tray.on('click', () => toggleWindow());
 }
 
@@ -588,14 +595,75 @@ function setupIPC() {
     return true;
   });
 
-  // App Information Handler for About Dialog
+  // App Information Handler for About Dialog & Preferences
   ipcMain.handle('get-app-info', () => {
+    const activeShortcut = hotkeyManager ? hotkeyManager.getShortcut() : (storage ? storage.getShortcut() : 'Control+Shift+V');
+    const defaultShortcut = storage ? storage.getDefaultShortcut() : (process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V');
     return {
       version: app.getVersion() || '1.0.0',
       platform: process.platform,
       autoStart: isAutoStartEnabled(),
-      shortcut: process.platform === 'darwin' ? 'Cmd+Shift+V' : 'Ctrl+Shift+V'
+      shortcut: activeShortcut,
+      defaultShortcut: defaultShortcut,
+      displayTokens: HotkeyManager.toDisplayTokens(activeShortcut),
+      displayString: HotkeyManager.toDisplayString(activeShortcut),
+      defaultDisplayTokens: HotkeyManager.toDisplayTokens(defaultShortcut),
+      defaultDisplayString: HotkeyManager.toDisplayString(defaultShortcut)
     };
+  });
+
+  // Hotkey Customization Handlers
+  ipcMain.handle('set-shortcut', (_e, newShortcut) => {
+    if (!hotkeyManager) {
+      return { success: false, error: 'Hotkey manager is unavailable' };
+    }
+    const result = hotkeyManager.updateShortcut(newShortcut);
+    if (result.success) {
+      if (storage) storage.setShortcut(result.shortcut);
+      updateTrayMenu();
+      const payload = {
+        shortcut: result.shortcut,
+        displayTokens: result.displayTokens,
+        displayString: result.displayString
+      };
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('shortcut-updated', payload);
+      }
+      if (aboutWindow && !aboutWindow.isDestroyed()) {
+        aboutWindow.webContents.send('shortcut-updated', payload);
+      }
+    }
+    return result;
+  });
+
+  ipcMain.handle('reset-shortcut', () => {
+    const defaultSc = storage ? storage.getDefaultShortcut() : (process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V');
+    if (!hotkeyManager) {
+      if (storage) storage.setShortcut(defaultSc);
+      return {
+        success: true,
+        shortcut: defaultSc,
+        displayTokens: HotkeyManager.toDisplayTokens(defaultSc),
+        displayString: HotkeyManager.toDisplayString(defaultSc)
+      };
+    }
+    const result = hotkeyManager.updateShortcut(defaultSc);
+    if (result.success) {
+      if (storage) storage.setShortcut(defaultSc);
+      updateTrayMenu();
+      const payload = {
+        shortcut: defaultSc,
+        displayTokens: result.displayTokens,
+        displayString: result.displayString
+      };
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('shortcut-updated', payload);
+      }
+      if (aboutWindow && !aboutWindow.isDestroyed()) {
+        aboutWindow.webContents.send('shortcut-updated', payload);
+      }
+    }
+    return result;
   });
 
   // Autostart Toggle Handler
@@ -722,13 +790,44 @@ app.whenReady().then(() => {
   // Check accessibility permissions on startup
   PasteInjector.checkPermissions(true);
 
+  // Parse CLI shortcut or environment variable
+  function parseShortcutFromArgv(argv) {
+    if (!Array.isArray(argv)) return null;
+    for (let i = 0; i < argv.length; i++) {
+      const arg = argv[i];
+      if (typeof arg !== 'string') continue;
+      if (arg.startsWith('--shortcut=')) {
+        return arg.slice(11).replace(/^["']|["']$/g, '');
+      }
+      if (arg.startsWith('--set-shortcut=')) {
+        return arg.slice(15).replace(/^["']|["']$/g, '');
+      }
+      if ((arg === '--shortcut' || arg === '--set-shortcut') && argv[i + 1]) {
+        return argv[i + 1].replace(/^["']|["']$/g, '');
+      }
+    }
+    return null;
+  }
+
+  const cliShortcut = parseShortcutFromArgv(process.argv);
+  const envShortcut = process.env.CLIPBOARD_SHORTCUT;
+  if (cliShortcut) {
+    storage.setShortcut(cliShortcut);
+    console.log(`[App] Custom shortcut configured via CLI argument: ${cliShortcut}`);
+  } else if (envShortcut && !storage.getSetting('shortcut')) {
+    storage.setShortcut(envShortcut);
+    console.log(`[App] Shortcut configured from CLIPBOARD_SHORTCUT env: ${envShortcut}`);
+  }
+
+  const initialShortcut = storage.getShortcut();
+
   // Create System Tray and HUD window
   createTray();
   createWindow();
   setupIPC();
 
   // Register global hotkey
-  hotkeyManager = new HotkeyManager('CommandOrControl+Shift+V');
+  hotkeyManager = new HotkeyManager(initialShortcut);
   hotkeyManager.register(() => {
     toggleWindow();
   });

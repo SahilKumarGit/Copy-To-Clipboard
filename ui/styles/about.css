@@ -20,7 +20,7 @@ body {
 .about-container {
   width: 100%;
   height: 100%;
-  padding: 20px 18px 16px;
+  padding: 16px 16px 14px;
   background: #181a20;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 14px;
@@ -42,36 +42,37 @@ body {
 }
 
 .app-logo-image {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
-  margin-bottom: 8px;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+  margin-bottom: 6px;
   object-fit: cover;
 }
 
 .app-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.3px;
   color: #ffffff;
-  margin-bottom: 4px;
+  margin: 0 0 3px 0;
 }
 
 .app-version {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: #60a5fa;
   background: rgba(59, 130, 246, 0.18);
   border: 1px solid rgba(59, 130, 246, 0.3);
-  padding: 1.5px 8px;
+  padding: 1px 7px;
   border-radius: 9999px;
-  margin-bottom: 5px;
+  margin-bottom: 4px;
 }
 
 .app-subtitle {
-  font-size: 11px;
+  font-size: 10.5px;
   color: #9ca3af;
+  margin: 0;
 }
 
 /* Details Section */
@@ -79,18 +80,18 @@ body {
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 9px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 10px 0;
+  gap: 7px;
+  margin: 8px 0;
 }
 
 .detail-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .detail-label {
@@ -102,14 +103,148 @@ body {
   font-weight: 500;
 }
 
-.detail-value kbd {
+.detail-value kbd,
+.shortcut-keys-wrapper kbd {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 4px;
-  padding: 1px 5px;
+  padding: 1.5px 5px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 10px;
-  color: #e5e7eb;
+  color: #f3f4f6;
+}
+
+/* Interactive Global Shortcut Row */
+.shortcut-config-row {
+  align-items: center;
+  padding-bottom: 3px;
+}
+
+.shortcut-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.shortcut-subtext {
+  font-size: 9px;
+  color: #60a5fa;
+}
+
+.shortcut-action-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.shortcut-record-btn {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  padding: 2.5px 7px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  color: #f3f4f6;
+  outline: none;
+}
+
+.shortcut-record-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(96, 165, 250, 0.5);
+}
+
+.shortcut-record-btn.recording {
+  background: rgba(59, 130, 246, 0.22);
+  border-color: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.45);
+  animation: pulse-border 1.5s infinite;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 4px rgba(59, 130, 246, 0.3); }
+  50% { box-shadow: 0 0 12px rgba(59, 130, 246, 0.6); }
+  100% { box-shadow: 0 0 4px rgba(59, 130, 246, 0.3); }
+}
+
+.shortcut-keys-wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.shortcut-keys-wrapper .plus {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 9px;
+  margin: 0 2.5px;
+}
+
+.shortcut-recording-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #93c5fd;
+  font-weight: 500;
+}
+
+.pulse-ring {
+  width: 6px;
+  height: 6px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0% { transform: scale(0.85); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.85); opacity: 0.6; }
+}
+
+.icon-tool-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #9ca3af;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.icon-tool-btn:hover {
+  background: rgba(255, 255, 255, 0.13);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.shortcut-feedback-banner {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  margin-top: -2px;
+  margin-bottom: 2px;
+  transition: all 0.2s ease;
+  animation: fadeIn 0.2s ease;
+}
+
+.shortcut-feedback-banner.success {
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.shortcut-feedback-banner.error {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
 }
 
 /* Toggle Switch */
@@ -163,14 +298,14 @@ input:checked + .slider:before {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .uninstall-link-btn {
   background: transparent;
   border: none;
   color: #6b7280;
-  font-size: 11px;
+  font-size: 10.5px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -182,89 +317,89 @@ input:checked + .slider:before {
 
 .uninstall-link-btn:hover {
   color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.bottom-center {
-  width: 100%;
-  display: flex;
-  justify-content: center;
+  background: rgba(239, 68, 68, 0.08);
 }
 
 .close-btn {
-  background: #3b82f6;
-  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: #ffffff;
-  font-size: 12px;
+  padding: 5px 22px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 7px 48px;
-  border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .close-btn:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.45);
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
-/* Modal Overlay for Uninstall Confirmation */
+/* Modal Overlay & Base */
 .confirm-modal-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.78);
-  backdrop-filter: blur(6px);
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 16px;
+  align-items: center;
   z-index: 100;
-  border-radius: 14px;
+  animation: fadeIn 0.15s ease-out;
 }
 
 .confirm-modal {
-  background: #1e2027;
-  border: 1px solid rgba(239, 68, 68, 0.35);
-  border-radius: 10px;
+  background: #1e2129;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
   padding: 16px;
+  width: 88%;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8);
 }
 
 .modal-icon-danger {
   color: #ef4444;
-  margin-bottom: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
 }
 
 .modal-title {
   font-size: 13.5px;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 6px;
+  margin: 0 0 5px 0;
 }
 
 .modal-desc {
-  font-size: 11px;
+  font-size: 10.5px;
   line-height: 1.45;
   color: #9ca3af;
-  margin-bottom: 12px;
+  margin: 0 0 10px 0;
 }
 
 .modal-checkbox-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 10.5px;
   color: #9ca3af;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .modal-buttons {
@@ -276,7 +411,7 @@ input:checked + .slider:before {
 .modal-btn {
   flex: 1;
   padding: 6px 10px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
@@ -301,4 +436,153 @@ input:checked + .slider:before {
 
 .confirm-danger-btn:hover {
   background: #dc2626;
+}
+
+/* Preset & Custom Hotkey Modal Specifics */
+.preset-modal-box {
+  text-align: left;
+  align-items: stretch;
+  padding: 14px 14px 12px;
+  width: 90%;
+  max-width: 330px;
+}
+
+.preset-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.preset-header-titles .modal-title {
+  text-align: left;
+  margin-bottom: 2px;
+}
+
+.preset-header-titles .modal-desc {
+  text-align: left;
+  margin-bottom: 0;
+  font-size: 10px;
+}
+
+.close-x-btn {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.close-x-btn:hover {
+  color: #ffffff;
+}
+
+.section-micro-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  color: #9ca3af;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.presets-chip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+
+.preset-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 5px 6px;
+  color: #e5e7eb;
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s ease;
+  outline: none;
+}
+
+.preset-chip:hover {
+  background: rgba(59, 130, 246, 0.16);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #93c5fd;
+}
+
+.preset-chip.active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #3b82f6;
+  color: #bfdbfe;
+  font-weight: 600;
+}
+
+.manual-input-box {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.manual-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  color: #f3f4f6;
+  padding: 5px 7px;
+  font-size: 10.5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.manual-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.4);
+}
+
+.manual-input-hint {
+  font-size: 8.5px;
+  color: #6b7280;
+  display: block;
+  margin-top: 4px;
+}
+
+.apply-chip-btn {
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.apply-chip-btn:hover {
+  background: #1d4ed8;
+}
+
+.preset-error-banner {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-size: 10px;
+  border-radius: 5px;
+  padding: 4px 6px;
+  margin-top: 8px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }

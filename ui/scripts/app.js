@@ -90,6 +90,16 @@ class ClipboardApp {
       this.checkAccessibility();
     });
 
+    // Open settings / preferences button
+    const settingsBtn = document.getElementById('open-settings-btn');
+    if (settingsBtn) {
+      settingsBtn.addEventListener('click', () => {
+        if (window.clipboardAPI && window.clipboardAPI.openAbout) {
+          window.clipboardAPI.openAbout();
+        }
+      });
+    }
+
     // Listen for real-time copy events pushed from main process
     if (window.clipboardAPI) {
       window.clipboardAPI.onClipboardChanged((newItem) => {

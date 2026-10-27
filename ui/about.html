@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; font-src 'self';" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>About Clipboard Manager</title>
+  <title>Preferences & About Clipboard Manager</title>
   <link rel="stylesheet" href="styles/main.css" />
   <link rel="stylesheet" href="styles/about.css" />
 </head>
@@ -12,19 +12,48 @@
   <div class="about-container">
     <!-- Header with App Logo -->
     <div class="about-header">
-      <img src="icon.png" width="52" height="52" class="app-logo-image" alt="Clipboard Manager Logo" />
-
+      <img src="icon.png" width="48" height="48" class="app-logo-image" alt="Clipboard Manager Logo" />
       <h1 class="app-title">Clipboard Manager</h1>
-      <span class="app-version" id="app-version">v1.0.4</span>
+      <span class="app-version" id="app-version">v1.0.14</span>
       <p class="app-subtitle">Cross-Platform Lightweight Clipboard Daemon</p>
     </div>
 
-    <!-- Details Section -->
+    <!-- Details & Settings Section -->
     <div class="details-section">
-      <div class="detail-row">
-        <span class="detail-label">Global Shortcut</span>
-        <span class="detail-value" id="shortcut-label"><kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd></span>
+      <!-- Interactive Global Shortcut Row -->
+      <div class="detail-row shortcut-config-row">
+        <div class="shortcut-info">
+          <span class="detail-label">Global Shortcut</span>
+          <span class="shortcut-subtext" id="shortcut-subtext">Click to rebind</span>
+        </div>
+        <div class="shortcut-action-group">
+          <button type="button" class="shortcut-record-btn" id="shortcut-record-btn" title="Click to record new shortcut keys">
+            <span class="shortcut-keys-wrapper" id="shortcut-keys-wrapper">
+              <kbd>Cmd</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>V</kbd>
+            </span>
+            <span class="shortcut-recording-state" id="shortcut-recording-state" style="display: none;">
+              <span class="pulse-ring"></span>
+              <span class="recording-label">Press keys...</span>
+            </span>
+          </button>
+          <button type="button" class="icon-tool-btn" id="open-presets-btn" title="Select preset or type custom accelerator">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+          </button>
+          <button type="button" class="icon-tool-btn" id="reset-shortcut-btn" title="Reset to default shortcut">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+          </button>
+        </div>
       </div>
+
+      <!-- Feedback message under shortcut -->
+      <div class="shortcut-feedback-banner" id="shortcut-feedback" style="display: none;"></div>
+
       <div class="detail-row">
         <span class="detail-label">Capacity Limit</span>
         <span class="detail-value">50 Recent Items (FIFO + Pinned)</span>
@@ -57,6 +86,37 @@
 
       <div class="bottom-center">
         <button class="close-btn" id="close-about-btn">Close</button>
+      </div>
+    </div>
+
+    <!-- Shortcut Presets & Manual Input Modal -->
+    <div class="confirm-modal-overlay" id="presets-modal" style="display: none;">
+      <div class="confirm-modal preset-modal-box">
+        <div class="preset-modal-header">
+          <div class="preset-header-titles">
+            <h2 class="modal-title">Customize Hotkey</h2>
+            <p class="modal-desc">Pick a popular preset or type any key accelerator.</p>
+          </div>
+          <button type="button" class="close-x-btn" id="close-presets-modal-btn" title="Close">×</button>
+        </div>
+
+        <div class="presets-section">
+          <span class="section-micro-label">Popular Presets</span>
+          <div class="presets-chip-grid" id="presets-chip-grid">
+            <!-- Dynamically populated chips -->
+          </div>
+        </div>
+
+        <div class="custom-type-section">
+          <label for="manual-shortcut-input" class="section-micro-label">Or Type Accelerator</label>
+          <div class="manual-input-box">
+            <input type="text" id="manual-shortcut-input" class="manual-input" placeholder="e.g. Ctrl+Alt+V or Super+V" autocomplete="off" spellcheck="false" />
+            <button type="button" class="apply-chip-btn" id="apply-manual-btn">Apply</button>
+          </div>
+          <span class="manual-input-hint">Modifiers: Ctrl, Alt/Opt, Shift, Cmd, Super • Keys: letters, numbers, Space, F1-F12</span>
+        </div>
+
+        <div class="preset-error-banner" id="preset-error-banner" style="display: none;"></div>
       </div>
     </div>
 

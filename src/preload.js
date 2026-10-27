@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('clipboardAPI', {
   deleteItem: (id) => ipcRenderer.invoke('delete-item', id),
   clearUnpinned: () => ipcRenderer.invoke('clear-unpinned'),
   hideWindow: () => ipcRenderer.invoke('hide-window'),
+  openAbout: () => ipcRenderer.invoke('open-about'),
   checkPermissions: () => ipcRenderer.invoke('check-permissions'),
   requestPermissions: () => ipcRenderer.invoke('request-permissions'),
   openGuide: () => ipcRenderer.invoke('open-accessibility-guide'),
@@ -17,12 +18,20 @@ contextBridge.exposeInMainWorld('clipboardAPI', {
   onWindowShown: (callback) => {
     ipcRenderer.on('window-shown', () => callback());
   },
+  onShortcutUpdated: (callback) => {
+    ipcRenderer.on('shortcut-updated', (_event, data) => callback(data));
+  },
   hudReady: () => ipcRenderer.send('hud-ready')
 });
 
 contextBridge.exposeInMainWorld('aboutAPI', {
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  setShortcut: (shortcut) => ipcRenderer.invoke('set-shortcut', shortcut),
+  resetShortcut: () => ipcRenderer.invoke('reset-shortcut'),
   setAutoStart: (enabled) => ipcRenderer.invoke('set-auto-start', enabled),
   closeWindow: () => ipcRenderer.invoke('close-about'),
-  uninstallApp: (options) => ipcRenderer.invoke('uninstall-app', options)
+  uninstallApp: (options) => ipcRenderer.invoke('uninstall-app', options),
+  onShortcutUpdated: (callback) => {
+    ipcRenderer.on('shortcut-updated', (_event, data) => callback(data));
+  }
 });
