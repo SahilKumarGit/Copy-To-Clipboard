@@ -50,3 +50,24 @@
 - **Keyboard-First**: A user should be able to press `Ctrl+Shift+V`, hit `Down`, and press `Enter` to paste without touching the mouse.
 - **Compact Cards**: Max height per text item preview: 3 lines. Expandable on hover or click.
 - **Image Thumbnails**: Render crisp, aspect-ratio-preserved thumbnails with dimensions badge (e.g., `800x600 · 124 KB`).
+
+---
+
+## 5. Mandatory Verification & Testing Policy
+
+Whenever **ANY** modification is made to the codebase (features, bug fixes, refactoring, or UI changes), the changes **MUST** be verified on **BOTH macOS and Ubuntu Linux** before concluding:
+
+### 5.1 Ubuntu Linux Verification (via Docker)
+- Execute the end-to-end container test:
+  ```bash
+  docker run --rm -e APP_HAS_XDOTOOL=1 -v $(pwd)/src:/app/src -v $(pwd)/ui:/app/ui clipboard-e2e:latest /opt/e2e/run.sh
+  ```
+- **Requirements**: Must exit with `[e2e] RESULT: PASS`, verify target text injection, and check for zero unhandled promise rejections or tray exceptions.
+
+### 5.2 macOS Verification
+- Run unit test suite: `npm test` (all StorageEngine, HotkeyManager, and CLI configuration tests must pass 100%).
+- Verify JS syntax: `node -c src/main.js src/preload.js src/hotkey.js src/storage.js ui/scripts/*.js`.
+- Verify background daemon startup & global hotkey binding (`Command+Shift+V` + `Control+Shift+V`) with isolated user data profile.
+- Rebuild and update local `/Applications/ClipboardManager.app` (`npx electron-builder --mac --dir`).
+- Never leave hardcoded test shortcuts in `~/Library/Application Support/clipboard-history/settings.json`.
+
