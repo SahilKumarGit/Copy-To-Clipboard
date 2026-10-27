@@ -1,0 +1,323 @@
+/* ── Inline Hotkey Settings Panel (inside main HUD) ── */
+.hotkey-panel {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 12, 16, 0.6);
+  padding: 6px 10px 8px;
+  animation: hk-slide-down 0.18s ease-out;
+  overflow: hidden;
+}
+
+@keyframes hk-slide-down {
+  from { max-height: 0; opacity: 0; padding-top: 0; padding-bottom: 0; }
+  to   { max-height: 300px; opacity: 1; }
+}
+
+.hotkey-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.hotkey-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hotkey-panel-title svg {
+  opacity: 0.6;
+}
+
+.hotkey-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hotkey-prefs-link {
+  background: transparent;
+  border: none;
+  color: var(--accent-blue);
+  font-size: 9.5px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.12s ease;
+  opacity: 0.85;
+}
+
+.hotkey-prefs-link:hover {
+  opacity: 1;
+  background: rgba(59, 130, 246, 0.12);
+  text-decoration: underline;
+}
+
+.hotkey-panel-close {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+  border-radius: 3px;
+  transition: all 0.1s ease;
+}
+
+.hotkey-panel-close:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Current shortcut row ── */
+.hotkey-panel-current {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.hotkey-record-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 30px;
+}
+
+.hotkey-record-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.hotkey-record-btn.recording {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35), 0 0 12px rgba(59, 130, 246, 0.15);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.hotkey-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.hotkey-keys kbd {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-main);
+  min-width: 20px;
+  text-align: center;
+}
+
+.hk-plus {
+  color: var(--text-dim);
+  font-size: 9px;
+  margin: 0 2px;
+}
+
+/* Recording state */
+.hotkey-recording {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hk-pulse {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  animation: hk-pulse-ring 1s ease-in-out infinite;
+}
+
+@keyframes hk-pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+  50%      { box-shadow: 0 0 0 5px rgba(59, 130, 246, 0); }
+}
+
+.hk-rec-label {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--accent-blue);
+}
+
+/* Reset button */
+.hotkey-reset-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  flex-shrink: 0;
+}
+
+.hotkey-reset-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Preset chips ── */
+.hotkey-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.hk-preset-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-pill);
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 7px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.hk-preset-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.hk-preset-chip.active {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+}
+
+/* ── Manual input row ── */
+.hotkey-manual-row {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.hotkey-manual-input {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 3px 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  user-select: text;
+}
+
+.hotkey-manual-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.25);
+}
+
+.hotkey-manual-input::placeholder {
+  color: var(--text-dim);
+  font-family: var(--font-sans);
+}
+
+.hotkey-apply-btn {
+  background: var(--accent-blue);
+  border: none;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+}
+
+.hotkey-apply-btn:hover {
+  opacity: 0.88;
+}
+
+/* ── Feedback banner ── */
+.hotkey-panel-feedback {
+  font-size: 9.5px;
+  font-weight: 500;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  margin-top: 4px;
+  text-align: center;
+}
+
+.hotkey-panel-feedback.success {
+  background: rgba(16, 185, 129, 0.14);
+  color: #6ee7b7;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.hotkey-panel-feedback.error {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+/* ── Footer Hotkey Indicator & Quick Button ── */
+.footer-hotkey-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 9.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 5px;
+  margin-right: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.footer-hotkey-btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: var(--text-main);
+}
+
+.footer-hotkey-label {
+  font-size: 9px;
+  opacity: 0.75;
+}
+
+.footer-hotkey-btn kbd {
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(59, 130, 246, 0.12);
+  margin-right: 0;
+}
+

@@ -11,12 +11,25 @@ class KeyboardNavigator {
   _bindEvents() {
     window.addEventListener('keydown', (e) => {
       const searchInput = document.getElementById('search-input');
+      const manualInput = document.getElementById('hud-manual-input');
+      const hotkeyPanel = document.getElementById('hotkey-panel');
       const isSearchFocused = document.activeElement === searchInput;
+      const isManualInputFocused = document.activeElement === manualInput;
+      const isPanelOpen = hotkeyPanel && hotkeyPanel.style.display !== 'none';
 
-      // Escape to close HUD immediately
+      // Escape key: close hotkey panel first if open; otherwise hide HUD
       if (e.key === 'Escape') {
         e.preventDefault();
+        if (isPanelOpen && window.HotkeyPanel) {
+          window.HotkeyPanel.close();
+          return;
+        }
         this.app.hide();
+        return;
+      }
+
+      // If user is typing in the hotkey manual input, let that input handle keys
+      if (isManualInputFocused) {
         return;
       }
 

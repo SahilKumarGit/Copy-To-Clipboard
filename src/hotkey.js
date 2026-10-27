@@ -174,9 +174,14 @@ class HotkeyManager {
 
   getShortcutsToRegister(shortcut) {
     const list = [shortcut];
-    // On macOS, if the shortcut is the default Command+Shift+V or CommandOrControl+Shift+V,
-    // also register Control+Shift+V so users on external/Windows keyboards have a seamless experience.
-    if (process.platform === 'darwin' && (shortcut === 'Command+Shift+V' || shortcut === 'CommandOrControl+Shift+V')) {
+    // On macOS, if the shortcut is Command+Shift+V, Control+Shift+V, or CommandOrControl+Shift+V,
+    // register both so users with either Mac or external PC keyboards have a seamless experience.
+    if (process.platform === 'darwin' && (
+      shortcut === 'Command+Shift+V' ||
+      shortcut === 'Control+Shift+V' ||
+      shortcut === 'CommandOrControl+Shift+V'
+    )) {
+      if (!list.includes('Command+Shift+V')) list.push('Command+Shift+V');
       if (!list.includes('Control+Shift+V')) list.push('Control+Shift+V');
     }
     return list;

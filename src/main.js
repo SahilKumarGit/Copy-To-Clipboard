@@ -220,6 +220,55 @@ function updateTrayMenu() {
   const shortcutHint = HotkeyManager.toDisplayString(currentShortcut);
   tray.setToolTip(`Clipboard Manager (${shortcutHint})`);
 
+  // Build a Change Shortcut submenu with popular presets
+  const isMac = process.platform === 'darwin';
+  const presets = isMac ? [
+    { accelerator: 'Command+Shift+V', label: 'Cmd + Shift + V (Default)' },
+    { accelerator: 'Command+Alt+V', label: 'Cmd + Opt + V' },
+    { accelerator: 'Alt+Space', label: 'Opt + Space' },
+    { accelerator: 'Command+Shift+C', label: 'Cmd + Shift + C' },
+    { accelerator: 'Control+Space', label: 'Ctrl + Space' },
+    { accelerator: 'Super+V', label: 'Cmd + V (Super)' }
+  ] : [
+    { accelerator: 'Control+Shift+V', label: 'Ctrl + Shift + V (Default)' },
+    { accelerator: 'Control+Alt+V', label: 'Ctrl + Alt + V' },
+    { accelerator: 'Alt+Space', label: 'Alt + Space' },
+    { accelerator: 'Super+V', label: 'Super + V (Win + V)' },
+    { accelerator: 'Control+Shift+C', label: 'Ctrl + Shift + C' },
+    { accelerator: 'Control+Space', label: 'Ctrl + Space' }
+  ];
+
+  const shortcutSubmenu = presets.map(p => ({
+    label: p.label,
+    type: 'radio',
+    checked: p.accelerator.toLowerCase() === currentShortcut.toLowerCase(),
+    click: () => {
+      if (!hotkeyManager) return;
+      const result = hotkeyManager.updateShortcut(p.accelerator);
+      if (result.success) {
+        if (storage) storage.setShortcut(result.shortcut);
+        updateTrayMenu();
+        const payload = {
+          shortcut: result.shortcut,
+          displayTokens: result.displayTokens,
+          displayString: result.displayString
+        };
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('shortcut-updated', payload);
+        }
+        if (aboutWindow && !aboutWindow.isDestroyed()) {
+          aboutWindow.webContents.send('shortcut-updated', payload);
+        }
+      }
+    }
+  }));
+
+  shortcutSubmenu.push({ type: 'separator' });
+  shortcutSubmenu.push({
+    label: 'Custom Shortcut...',
+    click: () => openAboutWindow()
+  });
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `Open Clipboard (${shortcutHint})`,
@@ -227,9 +276,14 @@ function updateTrayMenu() {
     },
     { type: 'separator' },
     {
+      label: 'Change Shortcut',
+      submenu: shortcutSubmenu
+    },
+    { type: 'separator' },
+    {
       label: 'Pause Recording',
       type: 'checkbox',
-      checked: listener ? listener.isPaused() : false,
+      checked: listener ? (typeof listener.isPaused === 'function' ? listener.isPaused() : Boolean(listener.isPaused)) : false,
       click: (menuItem) => {
         if (!listener) return;
         if (menuItem.checked) {
@@ -821,16 +875,24 @@ app.whenReady().then(() => {
 
   const initialShortcut = storage.getShortcut();
 
-  // Create System Tray and HUD window
-  createTray();
-  createWindow();
+  // Setup IPC handlers first so renderer requests never fail
   setupIPC();
 
-  // Register global hotkey
+  // Create HUD window
+  createWindow();
+
+  // Register global hotkey immediately
   hotkeyManager = new HotkeyManager(initialShortcut);
   hotkeyManager.register(() => {
     toggleWindow();
   });
+
+  // Create System Tray (in try/catch so any tray issue never blocks hotkey or HUD)
+  try {
+    createTray();
+  } catch (err) {
+    console.error('[App] Error initializing system tray:', err);
+  }
 
   // The OS can silently drop the hotkey grab across sleep, screen lock or keyboard/layout changes
   // (notably X11 on Ubuntu), so re-register it then and verify it periodically.

@@ -7,6 +7,7 @@
   <title>Clipboard History</title>
   <link rel="stylesheet" href="styles/main.css" />
   <link rel="stylesheet" href="styles/components.css" />
+  <link rel="stylesheet" href="styles/hotkey-panel.css" />
 </head>
 <body>
   <div class="hud-container">
@@ -34,6 +35,54 @@
         </button>
       </div>
     </header>
+
+    <!-- Inline Hotkey Settings Panel -->
+    <div class="hotkey-panel" id="hotkey-panel" style="display: none;">
+      <div class="hotkey-panel-header">
+        <span class="hotkey-panel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+          Change Shortcut
+        </span>
+        <div class="hotkey-panel-header-actions">
+          <button type="button" class="hotkey-prefs-link" id="hud-open-prefs-btn" title="Open full preferences & about window">All Settings ↗</button>
+          <button type="button" class="hotkey-panel-close" id="hotkey-panel-close" title="Close">×</button>
+        </div>
+      </div>
+
+      <!-- Current shortcut with record button -->
+      <div class="hotkey-panel-current">
+        <button type="button" class="hotkey-record-btn" id="hud-shortcut-record-btn" title="Click, then press your new shortcut keys">
+          <span class="hotkey-keys" id="hud-shortcut-keys">
+            <kbd>Ctrl</kbd><span class="hk-plus">+</span><kbd>Shift</kbd><span class="hk-plus">+</span><kbd>V</kbd>
+          </span>
+          <span class="hotkey-recording" id="hud-shortcut-recording" style="display: none;">
+            <span class="hk-pulse"></span>
+            <span class="hk-rec-label">Press keys...</span>
+          </span>
+        </button>
+        <button type="button" class="hotkey-reset-btn" id="hud-reset-shortcut-btn" title="Reset to default">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Quick presets -->
+      <div class="hotkey-presets" id="hud-presets-grid"></div>
+
+      <!-- Manual input -->
+      <div class="hotkey-manual-row">
+        <input type="text" id="hud-manual-input" class="hotkey-manual-input" placeholder="e.g. Ctrl+Alt+V" autocomplete="off" spellcheck="false" />
+        <button type="button" class="hotkey-apply-btn" id="hud-apply-manual-btn">Apply</button>
+      </div>
+
+      <!-- Feedback -->
+      <div class="hotkey-panel-feedback" id="hud-shortcut-feedback" style="display: none;"></div>
+    </div>
 
     <!-- Permission Banner (macOS Accessibility) -->
     <div class="permission-banner" id="permission-banner" style="display: none;">
@@ -119,6 +168,10 @@
       </button>
 
       <div class="shortcut-hints">
+        <button type="button" class="footer-hotkey-btn" id="footer-hotkey-btn" title="Click to change shortcut">
+          <span class="footer-hotkey-label">Hotkey:</span>
+          <kbd id="footer-hotkey-kbd">Ctrl+Shift+V</kbd>
+        </button>
         <span><kbd>↑</kbd><kbd>↓</kbd> Nav</span>
         <span><kbd>↵</kbd> Paste</span>
         <span><kbd>Esc</kbd> Close</span>
@@ -128,6 +181,7 @@
 
   <script src="scripts/search.js"></script>
   <script src="scripts/keyboard_nav.js"></script>
+  <script src="scripts/hotkey-panel.js"></script>
   <script src="scripts/app.js"></script>
 </body>
 </html>

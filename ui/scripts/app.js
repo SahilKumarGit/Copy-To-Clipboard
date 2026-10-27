@@ -90,11 +90,14 @@ class ClipboardApp {
       this.checkAccessibility();
     });
 
-    // Open settings / preferences button
+    // Open settings / preferences button (toggles inline hotkey panel)
     const settingsBtn = document.getElementById('open-settings-btn');
     if (settingsBtn) {
-      settingsBtn.addEventListener('click', () => {
-        if (window.clipboardAPI && window.clipboardAPI.openAbout) {
+      settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (window.HotkeyPanel) {
+          window.HotkeyPanel.toggle();
+        } else if (window.clipboardAPI && window.clipboardAPI.openAbout) {
           window.clipboardAPI.openAbout();
         }
       });

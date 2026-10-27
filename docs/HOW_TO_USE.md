@@ -91,21 +91,26 @@ Look for the small clipboard icon in your macOS Menu Bar or Linux System Tray:
 
 ## ⌨️ 8. Customizing the Global Shortcut
 
-You can easily change the shortcut from the default (`Cmd+Shift+V` / `Ctrl+Shift+V`) to any key combination:
+You can easily change the shortcut from the default (`Cmd+Shift+V` on macOS / `Ctrl+Shift+V` on Linux) to any key combination through multiple convenient ways:
 
-### Option A: Interactive Key Recording (UI)
-1. Open the **Preferences / About** window (click the gear icon in the HUD or select **Preferences / About...** from the system tray).
-2. Click directly on the shortcut badge.
-3. It will pulse and prompt: `Press keys...`. Press any desired shortcut on your keyboard (e.g. `Ctrl+Alt+V`, `Alt+Space`, `Super+V`, `Cmd+Opt+V`, `F9`).
-4. The app instantly registers and saves your new hotkey!
-5. To restore the default, simply click the **Reset (↺)** button.
+### Option A: Directly from the Main HUD (Instant Inline Panel)
+1. In the floating HUD popup, click the **Settings (⚙️)** gear icon in the search bar or the **Hotkey badge** in the footer bar.
+2. An inline shortcut panel smoothly slides down right inside the HUD.
+3. Click the interactive shortcut button (it pulses `Press keys...`) and hit any key combo on your keyboard (e.g., `Ctrl+Alt+V`, `Alt+Space`, `Super+V`, `Cmd+Opt+V`, `F9`).
+4. Or click any of the **one-click preset chips** or type an accelerator in the text field and click **Apply**.
+5. To restore the default, click the **Reset (↺)** button.
 
-### Option B: Popular Presets or Manual Accelerator
-1. In the Preferences window, click the **Edit (✏️)** button next to the shortcut.
-2. Pick from popular platform presets (e.g. `Ctrl+Alt+V`, `Alt+Space`, `Super+V`, `Cmd+Opt+V`) or type any custom accelerator (e.g., `Control+Alt+Z`, `Super+V`, `Shift+Alt+V`).
-3. Click **Apply**.
+### Option B: Quick Submenu from the System Tray
+1. Right-click the **Clipboard Manager** tray icon in your menu bar / taskbar.
+2. Hover over **Change Shortcut**.
+3. Select any popular preset radio item (`Ctrl+Shift+V`, `Ctrl+Alt+V`, `Alt+Space`, `Super+V`, etc.) or click **Custom Shortcut...** to open full preferences.
+4. The tray tooltip and hotkey rebind immediately.
 
-### Option C: Command Line or Environment Variable
+### Option C: Preferences & About Window
+1. Open the Preferences window (click **All Settings ↗** in the HUD panel or select **Preferences / About...** from the tray menu).
+2. Click directly on the shortcut badge to record new keys, or click the **Edit (✏️)** button to open the presets modal.
+
+### Option D: Command Line or Environment Variable
 You can also launch or configure the daemon with a custom shortcut from terminal:
 ```bash
 # Launch with custom hotkey
@@ -115,6 +120,7 @@ clipboard-manager --shortcut="Ctrl+Alt+V"
 export CLIPBOARD_SHORTCUT="Alt+Space"
 clipboard-manager
 ```
+
 
 ---
 

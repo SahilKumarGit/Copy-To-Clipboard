@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('clipboardAPI', {
   checkPermissions: () => ipcRenderer.invoke('check-permissions'),
   requestPermissions: () => ipcRenderer.invoke('request-permissions'),
   openGuide: () => ipcRenderer.invoke('open-accessibility-guide'),
+  getAppInfo: () => ipcRenderer.invoke('get-app-info'),
+  setShortcut: (shortcut) => ipcRenderer.invoke('set-shortcut', shortcut),
+  resetShortcut: () => ipcRenderer.invoke('reset-shortcut'),
   onClipboardChanged: (callback) => {
     ipcRenderer.on('clipboard-item-added', (_event, item) => callback(item));
   },
