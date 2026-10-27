@@ -18,20 +18,21 @@
 
 ## 📸 Visual Showcase & How It Works
 
-### 1. Instant Cursor-Anchored Floating HUD (`Cmd+Shift+V` / `Ctrl+Shift+V`)
-Whenever you copy text, code, hex color codes, or images, Clipboard Manager captures them silently. Press your global hotkey and the floating acrylic HUD appears instantly anchored right beside your mouse pointer — on whichever monitor or desktop workspace you are working on:
+### 1. Instant Cursor-Anchored Floating HUD (`Cmd+Shift+V` / `Ctrl+Shift+V` or Custom)
+Whenever you copy text, code, hex color codes, or images, Clipboard Manager captures them silently. Press your global hotkey (default: `Cmd+Shift+V` on macOS, `Ctrl+Shift+V` on Linux, fully customizable) and the floating acrylic HUD appears instantly anchored right beside your mouse pointer — on whichever monitor or desktop workspace you are working on:
 
 <p align="center">
   <img src="docs/screenshots/hud-preview.png" width="360" alt="Clipboard Manager HUD" />
 </p>
 
 - **One-Click Auto-Paste**: Click any item card (or highlight with `↑` / `↓` and press `Enter`) — the HUD immediately dismisses and automatically injects a native `Cmd+V` / `Ctrl+V` keystroke directly into your active input field.
+- **Customizable Global Shortcut**: Rebind the trigger command to any key combination (e.g. `Alt+Space`, `Ctrl+Alt+V`, `Super+V`, `Cmd+Opt+V`, `F9`) from Preferences or the command line.
 - **Smart Classification**: Auto-detects programming languages, web links, hex color swatches, plain text, and bitmap images.
 - **Pinning**: Star your favorite snippets to keep them permanently saved in the 50-item FIFO ring buffer.
 - **Zero Dock Footprint**: Operates as a pure macOS background accessory daemon (`LSUIElement: true`) — never clutters your bottom Dock toolbar.
 
-### 2. Interactive Settings & Details
-Click the Menu Bar icon or open the app from Applications to access system status, autostart toggle, and uninstallation:
+### 2. Interactive Preferences & Settings
+Click the Menu Bar icon, the gear icon in the HUD, or open the app from Applications to customize your hotkey, check system status, toggle autostart, and uninstall:
 
 <p align="center">
   <img src="docs/screenshots/about-preview.png" width="330" alt="About Window" />
@@ -83,7 +84,7 @@ When code is merged to `main` or `master`, the GitHub Actions pipeline ([`.githu
 
 ## ✨ Features
 
-- **Global Hotkey HUD**: Triggered instantly via `Cmd+Shift+V` (macOS) or `Ctrl+Shift+V` (Linux) right next to your active cursor.
+- **Global Hotkey HUD**: Triggered instantly via `Cmd+Shift+V` (macOS) or `Ctrl+Shift+V` (Linux) — or customized to any key combination you choose (e.g. `Alt+Space`, `Ctrl+Alt+V`, `Super+V`).
 - **Auto-Paste Injection**: Click any card or press `Enter` to automatically inject the content directly into your active input field.
 - **Multi-Monitor Intelligent Clamping**: Seamlessly floats on whichever monitor or desktop workspace your mouse is located without snapping back to primary display.
 - **Auto-Start on Reboot**: Automatically registers into **macOS Login Items** and `launchd` (`~/.config/autostart` on Linux) so you never need to manually start it.

@@ -10,10 +10,12 @@ Welcome to **Clipboard Manager** — a lightning-fast, ultra-compact, cross-plat
 
 Whenever you need your clipboard history, press the global hotkey from any application or screen:
 
-- **macOS**: `Cmd + Shift + V`
-- **Ubuntu Linux**: `Ctrl + Shift + V`
+- **macOS**: `Cmd + Shift + V` *(Default, fully customizable)*
+- **Ubuntu Linux**: `Ctrl + Shift + V` *(Default, fully customizable)*
 
 > [!TIP]
+> **Change the Shortcut Anytime**: You can customize the hotkey to anything you like (e.g. `Alt+Space`, `Ctrl+Alt+V`, `Super+V`, `Cmd+Opt+V`, `F9`) directly in the **Preferences / About** window or via the command line!
+> 
 > The floating acrylic HUD dynamically positions itself right beside your current mouse cursor on whichever monitor or virtual desktop (Space) you are actively working on.
 
 ---
@@ -87,15 +89,44 @@ Look for the small clipboard icon in your macOS Menu Bar or Linux System Tray:
 
 ---
 
-## 🔄 8. Background Daemon & Startup on Restart
+## ⌨️ 8. Customizing the Global Shortcut
 
-- **Zero Effort Startup**: Clipboard Manager registers itself in **macOS Login Items** (`~/.config/autostart` on Linux) upon first launch.
-- When you reboot or restart your computer, Clipboard Manager **automatically loads itself in the background**.
-- You do **not** need to manually launch the app each day — just press `Cmd+Shift+V` anytime!
+You can easily change the shortcut from the default (`Cmd+Shift+V` / `Ctrl+Shift+V`) to any key combination:
+
+### Option A: Interactive Key Recording (UI)
+1. Open the **Preferences / About** window (click the gear icon in the HUD or select **Preferences / About...** from the system tray).
+2. Click directly on the shortcut badge.
+3. It will pulse and prompt: `Press keys...`. Press any desired shortcut on your keyboard (e.g. `Ctrl+Alt+V`, `Alt+Space`, `Super+V`, `Cmd+Opt+V`, `F9`).
+4. The app instantly registers and saves your new hotkey!
+5. To restore the default, simply click the **Reset (↺)** button.
+
+### Option B: Popular Presets or Manual Accelerator
+1. In the Preferences window, click the **Edit (✏️)** button next to the shortcut.
+2. Pick from popular platform presets (e.g. `Ctrl+Alt+V`, `Alt+Space`, `Super+V`, `Cmd+Opt+V`) or type any custom accelerator (e.g., `Control+Alt+Z`, `Super+V`, `Shift+Alt+V`).
+3. Click **Apply**.
+
+### Option C: Command Line or Environment Variable
+You can also launch or configure the daemon with a custom shortcut from terminal:
+```bash
+# Launch with custom hotkey
+clipboard-manager --shortcut="Ctrl+Alt+V"
+
+# Or configure via environment variable
+export CLIPBOARD_SHORTCUT="Alt+Space"
+clipboard-manager
+```
 
 ---
 
-## ℹ️ 9. App List & "About" Pop-up
+## 🔄 9. Background Daemon & Startup on Restart
+
+- **Zero Effort Startup**: Clipboard Manager registers itself in **macOS Login Items** (`~/.config/autostart` on Linux) upon first launch.
+- When you reboot or restart your computer, Clipboard Manager **automatically loads itself in the background**.
+- You do **not** need to manually launch the app each day — just press your global shortcut anytime!
+
+---
+
+## ℹ️ 10. App List & "About" Pop-up
 
 If you click **Clipboard Manager** inside your Applications folder or launch it from Spotlight / Launchpad:
 - A compact **About & Details** pop-up appears displaying:

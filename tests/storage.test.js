@@ -114,7 +114,58 @@ function runTests() {
     assert.strictEqual(fs.existsSync(tempDir), false, 'Storage directory should be completely removed');
     assert.strictEqual(engine2.getItems().length, 0);
 
-    console.log('\n✅ All 12 StorageEngine tests passed successfully!');
+    // 13. Settings Persistence & Custom Shortcuts
+    console.log('Test 13: Settings management & custom shortcut persistence');
+    const engine3 = new StorageEngine(tempDir);
+    const defaultSc = engine3.getDefaultShortcut();
+    assert.strictEqual(engine3.getShortcut(), defaultSc, 'Default shortcut matches platform default');
+
+    engine3.setShortcut('Control+Alt+V');
+    assert.strictEqual(engine3.getShortcut(), 'Control+Alt+V', 'Shortcut updated to Control+Alt+V');
+
+    // Reload from disk to verify atomic settings persistence
+    const engine4 = new StorageEngine(tempDir);
+    assert.strictEqual(engine4.getShortcut(), 'Control+Alt+V', 'Persisted shortcut restored across restarts');
+
+    // Reset shortcut
+    engine4.resetShortcut();
+    assert.strictEqual(engine4.getShortcut(), defaultSc, 'Reset shortcut restores platform default');
+
+    // 14. HotkeyManager Normalization & Aliases
+    console.log('Test 14: Hotkey normalization and aliases');
+    const { normalizeAccelerator, toDisplayTokens, toDisplayString, HotkeyManager } = require('../src/hotkey');
+    assert.strictEqual(normalizeAccelerator('ctrl+shift+v'), 'Control+Shift+V');
+    assert.strictEqual(normalizeAccelerator('cmd+alt+v'), 'Command+Alt+V');
+    assert.strictEqual(normalizeAccelerator('alt+space'), 'Alt+Space');
+    assert.strictEqual(normalizeAccelerator('win+v'), 'Super+V');
+    assert.strictEqual(normalizeAccelerator('super+shift+v'), 'Shift+Super+V');
+    assert.strictEqual(normalizeAccelerator('ctrl+alt+z'), 'Control+Alt+Z');
+    assert.strictEqual(normalizeAccelerator('F9'), 'F9');
+
+    // 15. Invalid hotkey rejection
+    console.log('Test 15: Invalid hotkey rejection');
+    assert.strictEqual(normalizeAccelerator(''), null);
+    assert.strictEqual(normalizeAccelerator('v'), null, 'Single letter without modifier should be rejected');
+    assert.strictEqual(normalizeAccelerator('space'), null, 'Space without modifier should be rejected');
+
+    // 16. Display Tokens & Strings
+    console.log('Test 16: Platform display tokens and strings');
+    assert.deepStrictEqual(toDisplayTokens('CommandOrControl+Shift+V', 'darwin'), ['Cmd', 'Shift', 'V']);
+    assert.deepStrictEqual(toDisplayTokens('CommandOrControl+Shift+V', 'linux'), ['Ctrl', 'Shift', 'V']);
+    assert.deepStrictEqual(toDisplayTokens('Alt+Space', 'darwin'), ['Opt', 'Space']);
+    assert.deepStrictEqual(toDisplayTokens('Alt+Space', 'linux'), ['Alt', 'Space']);
+    assert.strictEqual(toDisplayString('Alt+Space', 'darwin'), 'Opt + Space');
+    assert.strictEqual(toDisplayString('Super+V', 'linux'), 'Super + V');
+
+    // 17. HotkeyManager instance rebinding
+    console.log('Test 17: HotkeyManager dynamic updating');
+    const manager = new HotkeyManager('ctrl+shift+v');
+    assert.strictEqual(manager.getShortcut(), 'Control+Shift+V');
+    const updateRes = manager.updateShortcut('alt+space');
+    assert.strictEqual(updateRes.success, true);
+    assert.strictEqual(manager.getShortcut(), 'Alt+Space');
+
+    console.log('\n✅ All 17 unit tests passed successfully!');
   } finally {
     // Clean up temp directory
     try {

@@ -25,10 +25,13 @@ class StorageEngine {
 
     this.assetsDir = path.join(this.storageDir, 'assets');
     this.metadataFile = path.join(this.storageDir, 'history.json');
+    this.settingsFile = path.join(this.storageDir, 'settings.json');
     this.items = [];
+    this.settings = {};
 
     this._ensureDirectories();
     this.load();
+    this.loadSettings();
   }
 
   _ensureDirectories() {
@@ -70,6 +73,62 @@ class StorageEngine {
     } catch (err) {
       console.error('[StorageEngine] Error saving history.json:', err.message);
     }
+  }
+
+  loadSettings() {
+    try {
+      if (fs.existsSync(this.settingsFile)) {
+        const raw = fs.readFileSync(this.settingsFile, 'utf8');
+        this.settings = JSON.parse(raw) || {};
+      } else {
+        this.settings = {};
+      }
+    } catch (err) {
+      console.error('[StorageEngine] Error loading settings.json:', err.message);
+      this.settings = {};
+    }
+  }
+
+  saveSettings() {
+    try {
+      const tmpFile = `${this.settingsFile}.tmp`;
+      fs.writeFileSync(tmpFile, JSON.stringify(this.settings, null, 2), { encoding: 'utf8', mode: 0o600 });
+      fs.renameSync(tmpFile, this.settingsFile);
+    } catch (err) {
+      console.error('[StorageEngine] Error saving settings.json:', err.message);
+    }
+  }
+
+  getSetting(key, defaultValue = null) {
+    if (this.settings && this.settings[key] !== undefined) {
+      return this.settings[key];
+    }
+    return defaultValue;
+  }
+
+  setSetting(key, value) {
+    if (!this.settings) this.settings = {};
+    this.settings[key] = value;
+    this.saveSettings();
+    return this.settings[key];
+  }
+
+  getDefaultShortcut() {
+    return process.platform === 'darwin' ? 'Command+Shift+V' : 'Control+Shift+V';
+  }
+
+  getShortcut() {
+    return this.getSetting('shortcut', this.getDefaultShortcut());
+  }
+
+  setShortcut(shortcut) {
+    return this.setSetting('shortcut', shortcut);
+  }
+
+  resetShortcut() {
+    const defaultSc = this.getDefaultShortcut();
+    this.setSetting('shortcut', defaultSc);
+    return defaultSc;
   }
 
   computeHash(data) {
@@ -332,6 +391,7 @@ class StorageEngine {
         fs.rmSync(this.storageDir, { recursive: true, force: true });
       }
       this.items = [];
+      this.settings = {};
       return true;
     } catch (err) {
       console.error('[StorageEngine] Error destroying data:', err.message);

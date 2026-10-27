@@ -103,6 +103,26 @@ body {
   color: var(--text-dim);
 }
 
+.settings-hud-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 3px 4px;
+  margin-left: 3px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.settings-hud-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* Permission Banner */
 .permission-banner {
   background: rgba(245, 158, 11, 0.14);
