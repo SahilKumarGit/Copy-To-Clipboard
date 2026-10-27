@@ -289,35 +289,46 @@
 /* ── Footer Hotkey Indicator & Quick Button ── */
 .footer-hotkey-btn {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.25);
   border-radius: var(--radius-sm);
   color: var(--text-dim);
   font-size: 9.5px;
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 1px 5px;
-  margin-right: 4px;
+  padding: 1px 3px;
+  margin-right: 3px;
   cursor: pointer;
   transition: all 0.15s ease;
   font-family: inherit;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .footer-hotkey-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(59, 130, 246, 0.4);
-  color: var(--text-main);
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
 }
 
 .footer-hotkey-label {
-  font-size: 9px;
-  opacity: 0.75;
+  display: none;
 }
 
 .footer-hotkey-btn kbd {
   color: #93c5fd;
-  border-color: rgba(59, 130, 246, 0.3);
+  border: 1px solid rgba(59, 130, 246, 0.35);
   background: rgba(59, 130, 246, 0.12);
+  font-weight: 500;
+  padding: 1px 4px;
   margin-right: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.footer-hotkey-btn:hover kbd {
+  background: rgba(59, 130, 246, 0.22);
+  color: #bfdbfe;
 }
 
